@@ -1,0 +1,4951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICCE 功能架构重构方案</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #dce3ee;
+      --text: #1f2937;
+      --muted: #64748b;
+      --primary: #1769e0;
+      --primary-soft: #e8f1ff;
+      --green: #177245;
+      --green-soft: #eaf7ef;
+      --orange: #a85d06;
+      --orange-soft: #fff4e6;
+      --red: #bf2f2f;
+      --red-soft: #fff0f0;
+      --code: #eef2f7;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 28px 20px 56px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+
+    .layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .toc {
+      position: sticky;
+      top: 24px;
+      width: 236px;
+      flex: 0 0 236px;
+      padding: 16px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      padding: 0;
+      border: 0;
+      font-size: 16px;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .toc ol ol {
+      margin-top: 6px;
+      padding-left: 18px;
+      display: none;
+    }
+
+    .toc li.open > ol {
+      display: block;
+    }
+
+    .toc li {
+      margin: 6px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .toc a {
+      color: var(--text);
+      text-decoration: none;
+      display: inline-block;
+      padding: 2px 0;
+      border-left: 2px solid transparent;
+      padding-left: 8px;
+    }
+
+    .toc a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+
+    .toc a.active {
+      color: var(--primary);
+      font-weight: 600;
+      border-left-color: var(--primary);
+      text-decoration: none;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1160px;
+      margin: 0;
+    }
+
+    h2,
+    h3 {
+      scroll-margin-top: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 42px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+      font-size: 22px;
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 17px;
+    }
+
+    p { margin: 0 0 12px; }
+
+    ul, ol {
+      margin: 0 0 12px;
+      padding-left: 22px;
+    }
+
+    li { margin: 4px 0; }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--code);
+      font-family: "SF Mono", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 14px 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e5e7eb;
+      line-height: 1.55;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      margin: 14px 0;
+      border-collapse: collapse;
+      background: var(--surface);
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-soft);
+      font-weight: 600;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .section {
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .note,
+    .decision,
+    .warning {
+      margin: 14px 0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .note {
+      border: 1px solid #bfd8ff;
+      background: var(--primary-soft);
+      color: #184f9d;
+    }
+
+    .decision {
+      border: 1px solid #aedfbf;
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .warning {
+      border: 1px solid #ffd59a;
+      background: var(--orange-soft);
+      color: var(--orange);
+    }
+
+    .pill {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+
+    .box {
+      min-width: 160px;
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .box.primary {
+      border-color: #8cb9ff;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .box.green {
+      border-color: #aedfbf;
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 20px 12px 40px; }
+      .layout { display: block; }
+      .toc {
+        position: static;
+        width: auto;
+        margin-bottom: 16px;
+      }
+      h1 { font-size: 24px; }
+      .section { padding: 14px; }
+      .box { min-width: 100%; }
+      .arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+<section class="section" id="current-baseline" style="max-width: 1180px; margin: 24px auto;">
+  <h1>ICCE 功能架构重构方案 · 当前有效基线</h1>
+  <div class="meta">
+    <span>状态：阶段四至阶段八已完成，仓库类型检查仍受既有非 ICCE 语法错误阻断</span>
+    <span>版本：v2.55 阶段八运行时内聚版</span>
+    <span>范围：<code>src/views/icce</code></span>
+    <span>历史章节：仅供追溯，不作为当前实现指令</span>
+  </div>
+
+  <div class="decision">
+    当前基线：图形与连线核心用例、包含关系、图形属性及图层排序均已按“应用用例 → 领域计划/组合命令 → Mutation Runtime”完成拆分，迁移期变更网关与 <code>CanvasController</code> 均已退场。生产业务变更不得绕过应用用例；快照装载和协作回放是直接状态写入例外。后续不得重新引入业务网关或控制器兼容转发。
+  </div>
+  <div class="warning">
+    <strong>完成度纠偏：</strong>以上结论只覆盖主画布核心 mutation 用例，不代表 ICCE 已达到历史章节中的理想目录。
+    当前仍存在根级 legacy Store、巨型交互组件与 UI 目录分散等实质差异；
+    应用权限、领域 API DTO、基础设施反向依赖 <code>canvas</code> 以及画布复合命令自行装配 Store/事务的已知缺口已清理。
+    阶段五应解释为“已完成约定批次”，不得再表述为“理想架构已经整体收口”。
+  </div>
+  <div class="decision">
+    <strong>重构拆分粒度准则：</strong>重构不是文件数量竞赛，禁止为了形式上的单一职责把同一 feature
+    拆成大量一函数一文件、仅供单一调用方使用的小文件。只有职责能够独立描述、存在稳定复用或替换需求、依赖边界需要隔离，
+    或能够形成有价值的独立测试单元时才新增文件；否则优先在同一业务文件内通过类型、函数和局部组件划分职责。
+    同一 feature 内连续出现多个互相依赖、只能组合使用且单文件内容很薄的模块时，应主动合并。拆分后必须同时带来更清晰的调用入口、
+    更低的依赖耦合或更明确的业务语义；仅缩短文件行数不构成拆分理由。
+  </div>
+
+  <h2>一、当前结论</h2>
+  <p>画布运行时业务编排已全部移出 <code>canvas-mutation-gateway.ts</code>，置顶与置底进入独立应用用例后，迁移期网关及其专用批量执行命令已经删除。</p>
+  <p>当前生产变更入口统一经过应用门面、应用用例、领域计划与 Mutation Runtime；初始化和恢复快照统一经过 <code>diagram-snapshot-adapter.ts</code>。不存在控制器重复实现或测试专用兼容入口。</p>
+
+  <h2>二、目标调用链</h2>
+  <pre><code>UI Permission Gate
+  -> UI / Tool Interaction
+  -> Application Use Case
+  -> Domain Planner / Rule
+  -> Mutation Runtime
+  -> Store + Event Adapter + Transaction Infrastructure</code></pre>
+  <table>
+    <thead><tr><th>层级</th><th>负责</th><th>禁止</th></tr></thead>
+    <tbody>
+      <tr><td>UI Permission / Interaction</td><td>按用户实际权限和 <code>DiagramType</code> 决定工具、快捷键、拖拽、缩放和删除是否可用。</td><td>不直接写 Store，不负责事务和领域计划。</td></tr>
+      <tr><td>Application Use Case</td><td>接收已经通过 UI 准入的用户意图，组织一次完整用例和事务。</td><td>不读取权限、Store 或页面状态，不实现几何或关系规则。</td></tr>
+      <tr><td>Domain Planner / Rule</td><td>计算数据结构是否合法、变更计划、影响范围和关系决策。</td><td>不判断用户是否可以创建、移动、缩放或删除，不依赖 Vue、Pinia、EventBus 或协作连接。</td></tr>
+      <tr><td>Mutation Runtime</td><td>执行原子图形/连线/关系写入，参与事务并调用事件适配器。</td><td>不承担区域扩展、删除级联、移动策略或父子关系编排。</td></tr>
+      <tr><td>Store / Event / Transaction</td><td>提供状态写入、事实事件和事务记录等基础设施实现。</td><td>不反向决定业务意图。</td></tr>
+    </tbody>
+  </table>
+  <div class="decision">
+    <strong>权限组织决策：</strong>图形创建、删除、移动、缩放、区域操作和连线操作权限只在 UI 交互入口判断。
+    权限函数直接接收 <code>DiagramType</code>，不通过 <code>tabValue</code> 转换。Application command 不再重复判断权限；
+    Domain 只校验图形类型、包含关系、删除计划、移动计划等数据规则。前端 UI 权限不是后端安全边界，接口仍需执行服务端授权。
+  </div>
+  <p><strong>说明：</strong>薄网关不是必选层。如果它只是参数转发，就直接合并到 Mutation Runtime adapter；只有存在稳定基础设施契约时才保留接口。</p>
+
+  <h2>三、按用例拆分</h2>
+  <table>
+    <thead><tr><th>用例</th><th>应用层</th><th>领域规划</th><th>Runtime 原子能力</th><th>旧入口退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>新增图形</td><td>权限、输入和事务</td><td>准入、z-index、区域扩展、创建关系</td><td>写入图形、写入关系、发布事件</td><td>创建用例成为唯一编排入口后移除 <code>CanvasController.addShape</code></td></tr>
+      <tr><td>更新图形</td><td>更新意图、选项和事务</td><td>属性计划、区域扩展、几何影响范围、关系差异</td><td>写入图形、同步连线、发布事件</td><td>更新用例覆盖所有调用方后移除 <code>updateShape/updateShapes</code></td></tr>
+      <tr><td>删除选择</td><td>删除权限、选择和事务</td><td>删除树、级联连线、孤儿关系、选择结果</td><td>删除图形/连线/关系、发布删除事件</td><td>删除用例覆盖快捷键、上下文和批处理后移除删除兼容入口</td></tr>
+      <tr><td>移动选择</td><td>移动意图、策略选项和事务</td><td>移动计划、子节点范围、受影响连线</td><td>批量写入图形/连线、发布事件</td><td>移动用例覆盖拖拽和批量移动后移除移动兼容入口</td></tr>
+      <tr><td>新增连线</td><td>创建权限、输入和事务</td><td>端点准入、正交线初始路由</td><td>写入连线、发布创建事实事件</td><td>所有创建入口切换后移除网关与控制器的 <code>addLine</code></td></tr>
+      <tr><td>更新连线</td><td>按普通/属性意图区分权限并组织事务</td><td>目标过滤、属性补丁、类型与路由转换计划</td><td>写入连线、发布更新事实事件</td><td>普通与属性入口切换后移除网关与控制器更新方法</td></tr>
+      <tr><td>删除连线</td><td>删除权限、组合操作授权和事务</td><td>目标存在与选择结果</td><td>删除连线、写回选择、发布删除事实事件</td><td>用户删除归入删除选择、结构补偿归入单线用例后移除网关与控制器入口</td></tr>
+      <tr><td>调整包含关系</td><td>显式设置、几何刷新和事务</td><td>循环准入、父子候选、直接子级与孤儿重挂计划</td><td>写入关系、同步连线、清理父节点字段并发布事实事件</td><td>门面统一调用应用用例后移除网关、控制器和指针辅助重复编排</td></tr>
+      <tr><td>更新图形属性</td><td>编辑权限、单项/批量事件和事务</td><td>属性补丁、空补丁及目标过滤</td><td>写入图形并发布逐项或批量事实事件</td><td>门面统一调用属性用例后移除网关属性入口</td></tr>
+      <tr><td>调整图层排序</td><td>编辑权限、方向和事务</td><td>全局非区域层级、批量相对顺序和边界值</td><td>批量写入层级并发布事实事件</td><td>置顶置底切换后删除无剩余职责的变更网关</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、本轮执行计划：完成“新增图形”用例</h2>
+  <div class="decision">
+    本轮只处理“新增图形”这一条完整用例。直接升级现有 <code>application/commands/create-shape-command.ts</code>，不再新增并行的 <code>create-shape-use-case</code>，也不提前拆更新、删除和移动用例。
+  </div>
+  <table>
+    <thead>
+    <tr>
+      <th>批次</th>
+      <th>改动范围</th>
+      <th>产出</th>
+      <th>完成标准</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>一、冻结行为基线</td>
+      <td><code>tests/application/commands/create-shape-command.spec.ts</code> 及现有区域扩展、包含关系、快速添加、插入、拖拽、粘贴相关用例</td>
+      <td>补齐拒绝创建、区域扩展失败、指定区域归属、功能图父子重排、跳过关系解析、事件顺序和事务失败不留半成品等行为断言。</td>
+      <td>测试能够约束现有返回值、状态变化、关系结果和事件顺序；本批次不修改生产行为。</td>
+    </tr>
+    <tr>
+      <td>二、升级应用用例契约</td>
+      <td><code>application/commands/create-shape-command.ts</code></td>
+      <td>定义输入、创建选项、操作元数据、失败原因、实际创建图形、受影响图形和关系差异；对外门面继续兼容布尔结果。</td>
+      <td>应用用例只依赖查询、领域规划和 Runtime 契约，不接收 Store、事件总线、控制器或巨型网关实例。</td>
+    </tr>
+    <tr>
+      <td>三、提取纯创建计划</td>
+      <td><code>domain/services/shape-creation-service.ts</code>、现有区域布局、包含关系和层级规则</td>
+      <td>生成创建准入、最终层级、区域扩展、区域归属、功能图父子关系和父节点字段清理计划；复用已有规则，不复制几何与关系算法。</td>
+      <td>领域计划输入为画布快照和创建意图，输出为不可变计划；不写 Store、不发事件、不开启事务，缺失字段保持空值。</td>
+    </tr>
+    <tr>
+      <td>四、收口原子写入能力</td>
+      <td><code>infrastructure/adapters/canvas-mutation-gateway.ts</code> 及迁移期图形、关系变更适配器</td>
+      <td>形成按能力命名的最小 Runtime 契约：读取当前快照、写入图形、更新受影响图形/连线、写入关系、发布事实事件和参与当前事务。</td>
+      <td>Runtime 中不存在创建准入、层级计算、区域扩展决策、嵌套候选计算或父节点字段清理规则；仅转发且无独立价值的适配器完成合并或标记删除。</td>
+    </tr>
+    <tr>
+      <td>五、迁移创建编排</td>
+      <td><code>application/commands/create-shape-command.ts</code>、<code>application/canvas-mutation-facade.ts</code></td>
+      <td>应用用例统一执行快照读取、计划生成、单一事务和计划落地；门面不再把创建直接转发给网关业务方法。</td>
+      <td>顺序保持为“UI 权限判断 → 领域准入 → 事务开始 → 区域扩展 → 图形写入 → 创建关系 → 父节点字段清理 → 图形/关系事件”；任一步失败均返回明确定义的失败结果，并且不留下半完成状态。</td>
+    </tr>
+    <tr>
+      <td>六、切换调用面并删除旧路径</td>
+      <td>拖拽、绘制、插入、快速添加、自动区域、粘贴、区域快照和弹窗创建入口</td>
+      <td>所有生产创建入口统一经过应用门面；删除 <code>canvas-mutation-gateway.addShape</code> 的业务编排和 <code>CanvasController.addShape</code> 兼容入口，清理重复创建测试依赖。</td>
+      <td>生产代码不存在绕过应用用例的业务型创建入口；网关行数和业务依赖下降；控制器不再公开新增图形能力。</td>
+    </tr>
+    </tbody>
+  </table>
+  <p><strong>批次约束：</strong>每个批次单独完成类型检查、<code>git diff --check</code> 和对应 Vitest 回归；前一批未满足完成标准时不进入下一批。若领域计划无法在不依赖 Store 或事件的情况下表达，先收紧输入快照与计划类型，不把规则退回 Runtime。</p>
+  <p><strong>本轮明确不做：</strong>不处理更新、删除、移动用例，不启动 hydration 深化、历史记录、撤销重做或协作协议升级，不进行纯目录搬迁，不新增按对象类型平行排列的 adapter。</p>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong><code>application/commands/create-shape-command.ts</code> 已成为唯一创建编排入口，<code>domain/services/shape-creation-service.ts</code> 已承接准入、层级、区域扩展、创建关系和父节点字段清理计划，<code>infrastructure/adapters/canvas-mutation-runtime.ts</code> 仅提供原子写入、事实事件和事务接线。<code>canvas-mutation-gateway.addShape</code>、<code>CanvasController.addShape</code> 及迁移期新增图形命令已删除；恢复和协作回放仍保留直接状态写入例外。类型检查、差异检查和 ICCE 全量 Vitest 回归已通过。
+  </div>
+  <div class="warning">
+    “更新图形”候选用例已完成，以下执行记录成为当前有效基线；下一候选用例调整为“删除选择”。
+  </div>
+
+  <h2>五、更新图形用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>update-shapes-command.ts</code> 统一承接单图形与批量更新计划及事务，通过模式分支处理单图形区域预规划和事实事件形态。</td><td>更新命令不再接收或重复执行权限策略，门面不再把更新参数转发到网关业务方法。</td></tr>
+      <tr><td>领域层</td><td>单图形更新生成区域扩展计划；批量更新复用区域布局、联动移动和连线影响范围规则。</td><td>规则不读取 Store，不发布事件。</td></tr>
+      <tr><td>Mutation Runtime</td><td>提供图形/连线原子写入、指定连线同步、批量事实事件和事务参与能力。</td><td>Runtime 不决定权限、区域扩展、统一位移或关系差异策略。</td></tr>
+      <tr><td>旧路径</td><td><code>canvas-mutation-gateway.updateShape/updateShapes</code> 与 <code>CanvasController.updateShape/updateShapes</code> 已删除。</td><td>生产更新调用统一经过应用门面；恢复和协作直接写入例外保持不变。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>单图形与批量更新已合并为一个应用命令，共用“区域扩展 → 图形写入 → 连线同步 → 关系差异”主流程；单图形模式增加区域扩展预规划并发送逐项事件，批量模式保留区域推移、子图形联动、区域内连线平移、统一位移连线处理和单次批量事件语义。更新命令只执行已通过准入的变更，不再保留遗留权限回调。网关下降到约 470 行，控制器不再公开图形更新入口。
+  </div>
+  <div class="warning">
+    “删除选择”职责盘点已完成：当前应用命令只负责目标准入与确认，删除树、级联连线、孤儿关系重挂、选择清理和删除事件仍分散在画布命令、Mutation Gateway 与 CanvasController 中；本轮按以下计划完成唯一编排入口收口。
+  </div>
+
+  <h2>六、本轮执行计划：完成“删除选择”用例</h2>
+  <table>
+    <thead><tr><th>批次</th><th>改动范围</th><th>产出</th><th>完成标准</th></tr></thead>
+    <tbody>
+      <tr><td>一、领域删除计划</td><td><code>domain/services</code>、现有包含关系与选择规则</td><td>从画布快照生成删除根、级联图形、关联连线、孤儿关系重挂和最终选择影响计划。</td><td>计划不读取 Store、不发布事件，并保持区域级联与功能图非级联语义。</td></tr>
+      <tr><td>二、应用用例编排</td><td><code>application/commands/delete-selection-command.ts</code></td><td>统一区域确认、提交态影响、事务、显式连线删除、图形树删除、关系差异和选择清理顺序。</td><td>快捷键、上下文删除和直接批量删除共用同一套计划执行逻辑；权限由调用该用例的 UI 交互入口判断。</td></tr>
+      <tr><td>三、Runtime 原子能力</td><td><code>infrastructure/adapters/canvas-mutation-runtime.ts</code></td><td>补齐删除图形、连线和关系的原子写入以及事实事件、选择写回能力。</td><td>Runtime 不计算删除树、不决定权限、不处理确认态或孤儿父级候选。</td></tr>
+      <tr><td>四、切换入口并清理旧路径</td><td>应用门面、快捷键、上下文命令、Mutation Gateway 与 CanvasController</td><td>门面提供删除选择和内部批量删除入口；移除删除上下文适配器、重复删除树执行命令及控制器兼容入口。</td><td>生产删除业务只经过应用用例，网关不再包含图形删除业务编排。</td></tr>
+      <tr><td>五、行为验收</td><td><code>src/views/icce/tests</code></td><td>覆盖权限与确认、区域级联、功能图孤儿重挂、显式与级联连线、选择结果、事件及事务。</td><td>类型检查、差异检查和 ICCE Vitest 回归通过。</td></tr>
+    </tbody>
+  </table>
+  <p><strong>本轮明确不做：</strong>不迁移移动选择、连线通用增删改、包含关系通用入口、历史回放或撤销重做；恢复、协作回放和组合操作内部回滚继续保留明确的直接执行语义，但图形批量删除复用同一应用命令。</p>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong><code>shape-deletion-service.ts</code> 已从不可变快照生成有序删除树、级联连线和功能图孤儿重挂计划；<code>delete-selection-command.ts</code> 统一处理区域确认、提交态影响、事务、事实事件与选择结果，删除权限由 UI 交互入口判断；Mutation Runtime 只新增删除图形、连线、关系、选择写回和删除事件等原子能力。快捷键、上下文工具栏、区域清空、引用替换和组合操作回滚均通过应用门面复用同一删除用例，网关与控制器中的重复删除编排以及三个迁移期删除命令文件已移除。
+  </div>
+  <div class="warning">
+    “移动选择”职责盘点已完成：UI 入口负责权限判断，应用命令负责提交态影响、移动计划与影响范围；本轮按以下计划完成唯一编排入口收口。
+  </div>
+
+  <h2>七、本轮执行计划：完成“移动选择”用例</h2>
+  <table>
+    <thead><tr><th>批次</th><th>改动范围</th><th>产出</th><th>完成标准</th></tr></thead>
+    <tbody>
+      <tr><td>一、冻结移动语义</td><td>UI 权限入口、应用命令、移动会话、领域移动服务和操作同步测试</td><td>固定权限入口、区域与子图形联动、区域内连线平移、普通连线端点同步、影响范围和提交态影响行为。</td><td>现有拖拽实时阶段与提交阶段的快照语义保持不变。</td></tr>
+      <tr><td>二、应用用例编排</td><td><code>application/commands/move-command.ts</code></td><td>统一领域计划、事务、批量图形更新、计划内连线更新和受影响目标计算。</td><td>应用命令只依赖领域服务与 Mutation Runtime；移动权限由 UI 交互入口判断。</td></tr>
+      <tr><td>三、复用原子能力</td><td><code>canvas-mutation-runtime.ts</code> 与图形更新用例</td><td>复用已有图形批量更新、连线写入、连线查询和事务能力，不新增移动策略方法。</td><td>Runtime 不判断移动权限、不决定子图形范围或区域连线范围。</td></tr>
+      <tr><td>四、切换并清理旧路径</td><td>应用门面、Mutation Gateway、CanvasController 和迁移期移动命令</td><td>门面直接调用移动应用用例；移除网关与控制器组合入口、移动上下文适配器和画布移动命令。</td><td>生产移动业务只有一个应用编排实现，拖拽会话公共契约保持兼容。</td></tr>
+      <tr><td>五、行为验收</td><td><code>src/views/icce/tests</code></td><td>补齐领域计划与应用编排断言，并迁移旧控制器/画布命令测试。</td><td>类型检查、差异检查和 ICCE 全量 Vitest 回归通过。</td></tr>
+    </tbody>
+  </table>
+  <p><strong>本轮明确不做：</strong>不迁移包含关系通用入口、连线通用增删改、历史回放或撤销重做；不改变移动会话的实时写入、提交快照和协作增量协议。</p>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong><code>move-command.ts</code> 已统一执行提交态影响、领域移动计划、应用事务、批量图形更新、区域内连线写入和受影响目标计算，移动权限由 UI 交互入口判断；应用门面直接注入 Mutation Runtime，不再把移动意图转发给网关。<code>CanvasController.moveShapesWithStrategy</code>、网关同名入口、移动上下文适配器、画布移动命令和无引用的控制器批量更新链路均已移除。区域与子图形联动、普通连线端点同步、区域内连线刚性平移、实时阶段影响范围累计和提交阶段快照语义保持不变；真实运行时验证一次区域联动移动仍只发布一次操作同步载荷。
+  </div>
+  <div class="note">
+    <strong>移动交互收口（2026 年 7 月 16 日）：</strong>拖拽权限由 UI 交互入口判断，实时阶段、提交阶段、包含关系刷新和快照记录与移动计划收口到唯一的应用层移动命令；<code>move-session.ts</code> 只维护单次拖拽的影响范围与操作编号，不再持有跨操作缓存或事务执行选项；<code>shape-drag-interaction.ts</code> 保留指针工具与选中层的交互入口，坐标差值、刚体多选、区域推动和移动策略已提取为无 Store 依赖的纯规划器。交互仓库中的受影响目标仅作为界面状态镜像，不再参与提交恢复。
+  </div>
+  <div class="warning">
+    下一候选用例为“新增连线”。启动前必须盘点端点准入、正交线初始化、创建事实事件、权限前置、快速连接与插入图形组合入口；不得把连线更新或包含关系通用入口提前并入同一轮。
+  </div>
+
+  <h2>八、新增连线用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>create-line-command.ts</code> 统一处理领域计划、事务、写入结果与创建事实事件，并返回明确的创建或拒绝结果。</td><td>门面不再把创建参数转发给网关业务方法；用户权限由 UI 创建入口判断。</td></tr>
+      <tr><td>领域层</td><td><code>planLineCreation</code> 只校验两端图形存在，并为点位不足的正交线生成初始路由；工具绘线与快速连接的交互规则保持原位。</td><td>计划不读取 Store、不发布事件，不扩大为自连、跨区域或重复连线等新规则。</td></tr>
+      <tr><td>Mutation Runtime</td><td>新增连线原子写入与创建事实事件能力，参与应用用例开启的当前事务。</td><td>Runtime 不判断权限、端点准入或正交路由策略。</td></tr>
+      <tr><td>旧路径</td><td><code>canvas-mutation-gateway.addLine</code>、<code>CanvasController.addLine</code> 与迁移期 <code>add-line-command.ts</code> 已删除；连线适配器不再包含新增职责。</td><td>恢复、水合与协作回放保留直接 Store 写入例外，生产业务创建统一经过应用门面。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>绘线工具、快速连接、快速添加、插入图形、粘贴和区域快照应用均通过应用门面进入唯一连线创建用例；端点准入和正交初始路由在状态写入前完成，Store 仅保留取整与原子写入。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 90 个测试文件、305 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“更新连线”。启动前必须盘点属性更新、端点同步、正交/折线路由编辑、批量属性入口与创建/删除职责边界；不得将删除连线或包含关系通用入口并入同一轮。
+  </div>
+
+  <h2>九、更新连线用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>update-line-command.ts</code> 统一普通修改、单属性与批量属性更新。</td><td>应用命令直接依赖领域计划和 Mutation Runtime；用户权限由对应 UI 编辑入口判断。</td></tr>
+      <tr><td>领域层</td><td><code>planLineUpdates</code> 负责目标去重、缺失目标过滤、属性补丁和类型/路由转换计划；端点重连、控制点和文本布局继续复用原交互几何模型。</td><td>不把图形移动触发的端点同步、删除规则或包含关系纳入更新用例。</td></tr>
+      <tr><td>Mutation Runtime</td><td>复用 <code>writeLineChanges</code> 完成原子写入、存储后载荷、提交态失效和 <code>LINE_UPDATED</code> 事实事件。</td><td>Runtime 不决定更新权限、属性补丁或路由编辑策略。</td></tr>
+      <tr><td>旧路径</td><td>网关的 <code>updateLine/updateLineProperty/updateLinesProperty</code>、<code>CanvasController.updateLine</code>、两套画布更新命令和独立批量属性应用转发均已删除。</td><td>端点重连、控制点、路径文字和上下文工具栏均只经过应用门面；回放和恢复保留直接 Store 写入例外。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>连线普通修改、单/批量属性、类型切换、箭头换向、端点重连、控制点拖拽和路径文字编辑已统一进入唯一更新用例。批量属性继续跳过空补丁，单属性与普通更新保留原空补丁事件语义；live/commit 的 operationId 与 phase、批量换向的外层单事务语义保持不变。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 87 个测试文件、307 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“删除连线”。启动前必须盘点权限、选择清理、提交态失效、删除事实事件、快捷键/上下文入口与图形级联删除的职责边界；不得将包含关系通用入口并入同一轮。
+  </div>
+
+  <h2>十、删除连线用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>delete-line-command.ts</code> 统一目标存在、事务、原子删除、选择修剪和删除结果；用户键盘/上下文删除继续复用 <code>deleteSelection</code> 组合用例。</td><td>单线命令不判断权限、不接收网关回调，也不承担图形级联删除规划。</td></tr>
+      <tr><td>组合操作</td><td>在线上插入图形的原线替换与失败补偿通过门面调用单线用例，并以已授权内部步骤注入准入。</td><td>组合失败补偿不因独立删除权限产生半完成状态。</td></tr>
+      <tr><td>Mutation Runtime</td><td>复用连线原子删除、选择读写和 <code>LINE_DELETED</code> 事件；<code>shiftLines</code> 直接接入平移执行命令。</td><td>Runtime 不计算删除权限或选择策略，不通过对象型连线适配器转发。</td></tr>
+      <tr><td>旧路径</td><td><code>canvas-mutation-gateway.removeLine</code>、<code>CanvasController.removeLine/shiftLines</code>、画布删除命令和 <code>line-mutation-adapter.ts</code> 已删除。</td><td>生产代码不存在独立控制器/网关连线删除入口；回放仍保留直接 Store 删除例外。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>显式单线删除在同一事务内完成原子删除、保留已选图形、修剪已选连线、提交态失效和删除事实事件；图形级联连线仍由删除选择领域计划去重并随 <code>SHAPE_DELETED</code> 聚合，不进入单线用例。删除选择现在会在破坏性写入前应用预计算的 <code>submittedRegionImpact</code>，区域内图形及级联连线删除可正确反提交同负责人区域，且排除本次即将删除的区域。迁移期 <code>line-mutation-adapter.ts</code> 已完全退出。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 86 个测试文件、311 条用例。
+  </div>
+  <div class="note">
+    <strong>薄封装清理（2026 年 7 月 16 日）：</strong><code>containment-mutation-adapter.ts</code> 与 <code>shape-mutation-adapter.ts</code> 的单方法转发已合并到调用方；<code>shape-batch-mutation-adapter.ts</code> 的临时集合和快照初始化已并入批量变更命令；Runtime 唯一调用的 <code>apply-shape-update-command.ts</code> 已内联为原子图形写入；无生产调用的 <code>apply-single-region-expansion-command.ts</code> 及其专属测试已删除。区域扩展、关联内容移动、批量连线同步和关系写入命令因包含独立规则继续保留。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 84 个测试文件、308 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“调整包含关系”。启动前必须盘点显式父子设置、功能图拖拽后刷新、关系准入、父节点业务字段清理、连线同步与关系事实事件；不得将剩余图形属性或图层排序入口并入同一轮。
+  </div>
+
+  <h2>十一、调整包含关系用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>update-containment-command.ts</code> 统一显式父子设置与功能图几何刷新，在单一事务中组织准入、关系变更和父节点业务字段清理。</td><td>门面不再把包含关系意图转发给网关，移动提交与选中层刷新复用同一用例。</td></tr>
+      <tr><td>领域层</td><td><code>planContainmentRefresh</code> 从图形与关系快照规划最近父级、直接子级、解除关系和孤儿重挂，并以模拟关系图保证批次内结果一致。</td><td>领域计划不读取 Store、不发布事件，也不依赖指针工具上下文。</td></tr>
+      <tr><td>Mutation Runtime</td><td>复用原子关系写入、关联连线同步、关系事实事件和图形字段写入能力。</td><td>Runtime 不计算几何候选、循环准入或字段清理时机。</td></tr>
+      <tr><td>旧路径</td><td>网关的三个包含关系入口、控制器重复刷新与私有关系编排、<code>nesting-helper.ts</code> 已删除。</td><td>恢复和协作回放保留直接状态写入例外，生产业务统一经过应用门面。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>显式设置继续区分已授权关系恢复与需要循环校验、父节点字段清理的业务设置；功能图拖拽后刷新按最终几何快照一次规划并在同一事务内落地，关系事件与关联连线同步仍由 Runtime 的原子写入能力发布。旧指针辅助测试已迁入领域计划和应用用例测试。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 83 个测试文件、303 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“更新图形属性”。启动前必须盘点单图形属性补丁、批量属性更新、空补丁语义、权限差异、事实事件与现有图形更新用例的复用边界；不得将图层排序入口并入同一轮。
+  </div>
+
+  <h2>十二、更新图形属性用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>update-shape-properties-command.ts</code> 统一单图形和批量属性意图，并复用现有图形更新执行链。</td><td>图形编辑权限由 UI 入口判断；门面不再把属性补丁转发给网关。</td></tr>
+      <tr><td>领域层</td><td><code>planShapePropertyUpdates</code> 统一数据与样式补丁合并、缺失目标过滤、区域过滤和空补丁处理。</td><td>单图形和批量属性更新均跳过区域；领域规划不读取 Store。</td></tr>
+      <tr><td>事件与事务</td><td>单图形发布逐项更新事实，批量发布一次批量更新事实；两者共用应用事务且跳过无关的关系差异。</td><td>属性更新不触发几何扩展或关联连线同步，空补丁不进入事务。</td></tr>
+      <tr><td>旧路径</td><td>网关的单图形与批量属性入口以及无生产调用的旧单图形写入命令已删除。</td><td>网关只剩图层排序职责，图形属性生产入口统一经过应用用例。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>上下文工具栏、负责人表单和其他门面调用统一进入图形属性应用用例；单图形和批量属性更新统一过滤区域，分别保留逐项事件和单次批量事件，缺失目标与空补丁在事务前返回明确结果。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 83 个测试文件、307 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“调整图层排序”。启动前必须盘点置顶、置底、层级作用域、批量顺序、空目标、权限和批量事实事件；完成后评估并删除仅剩转发价值的画布变更网关。
+  </div>
+
+  <h2>十三、调整图层排序用例执行结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>应用层</td><td><code>reorder-shapes-command.ts</code> 统一置顶与置底方向、事务和批量结果。</td><td>图形编辑权限由 UI 工具栏入口判断，应用门面不再引用变更网关。</td></tr>
+      <tr><td>领域层</td><td><code>planZIndexReorder</code> 保持全画布非区域图形共用层级作用域，过滤区域、缺失目标和重复编号，并保持选中图形原有相对顺序。</td><td>领域计划不读取 Store，不决定权限或事件。</td></tr>
+      <tr><td>Mutation Runtime</td><td>复用图形批量更新执行链写入层级并发布一次批量事实事件，跳过无关的关系差异和连线同步。</td><td>空目标与无权限在事务前结束，Runtime 不计算层级边界。</td></tr>
+      <tr><td>旧路径</td><td><code>canvas-mutation-gateway.ts</code> 和失去生产调用的旧批量变更命令已删除，共享的计划内连线更新类型归入画布事件契约。</td><td>生产代码不存在变更网关引用，独立规则命令继续保留。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>上下文工具栏置顶、置底统一进入图层排序应用用例，权限、目标过滤、全局层级边界、相对顺序、事务和批量事实事件均由明确分层负责。迁移期画布变更网关完成退场。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 83 个测试文件、309 条用例。
+  </div>
+  <div class="warning">
+    下一候选用例调整为“清理画布控制器与重复水合实现”。启动前必须对比控制器与 <code>diagram-snapshot-adapter.ts</code> 的清空、水合、区域修复和原始关系保留语义；迁移旧控制器测试后删除无生产调用的控制器，不改变初始化和恢复快照行为。
+  </div>
+
+  <h2>十四、画布控制器与重复水合清理结果</h2>
+  <table>
+    <thead><tr><th>边界</th><th>落地结果</th><th>退出条件</th></tr></thead>
+    <tbody>
+      <tr><td>生产入口</td><td><code>useDiagramLifecycle.ts</code> 继续通过 <code>diagram-snapshot-adapter.ts</code> 清空和装载快照，调用方式与时序不变。</td><td>生产代码不存在 <code>CanvasController</code> 引用。</td></tr>
+      <tr><td>水合语义</td><td>保留图形按图类型归一化、原始关系整体替换、连线装载、区域扩展与避让、后代及区域内连线同步平移。</td><td>区域修复只依赖快照关系图，不使用其他字段补齐关系。</td></tr>
+      <tr><td>测试归位</td><td>控制器水合用例迁入基础设施适配器目录，并补充旧状态清空、选择清理、原始关系保留及被推区域内部连线平移断言；运行时与操作同步集成测试按真实边界重命名。</td><td>测试目录和描述不再宣称经过控制器。</td></tr>
+      <tr><td>旧路径</td><td>无生产调用且与水合适配器重复的 <code>canvas-controller.ts</code> 已删除，测试中的无效控制器模拟、调试事件来源和权限说明已同步清理。</td><td>非历史生产代码不存在控制器文件路径或旧方法说明。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>图数据清空、水合和恢复期结构修复现在只有基础设施适配器一套实现；控制器不再作为测试专用副本存在。快照原始关系、用户图形归一化、区域扩展避让、后代与区域内连线平移语义均由迁移后的适配器回归覆盖。类型检查、差异检查和 ICCE 全量 Vitest 回归均已通过，共 83 个测试文件、309 条用例。
+  </div>
+  <div class="warning">
+    阶段四最终收口验收已完成，结果见下节；本计划不再自动产生下一候选用例。
+  </div>
+
+  <h2>十五、阶段四最终收口验收结果</h2>
+  <table>
+    <thead><tr><th>验收项</th><th>结果</th><th>持续约束</th></tr></thead>
+    <tbody>
+      <tr><td>生产变更边界</td><td>主画布图形与关系仓库的直接写入只保留 Mutation Runtime、快照装载和协作回放三处实现。</td><td>新增业务变更必须进入应用用例；新增直接写入文件会触发架构边界回归失败。</td></tr>
+      <tr><td>遗留兼容路径</td><td>生产源码不存在迁移期控制器、变更网关及其旧文件路径，调试事件来源和权限说明已使用当前边界。</td><td>不得以兼容、测试或薄转发名义恢复控制器和业务网关。</td></tr>
+      <tr><td>分层依赖</td><td>领域层不依赖应用层、基础设施或界面组件，应用用例已承接业务编排；但领域层仍复用部分 <code>canvas</code> 类型与纯工具，应用门面仍直接装配基础设施实现，物理依赖方向尚未完全收口。</td><td>领域规则保持纯计划，下一阶段继续归位共享模型与应用端口，不把已经完成的业务用例重新拆出第二套实现。</td></tr>
+      <tr><td>回归守卫</td><td><code>tests/architecture/runtime-mutation-boundary.spec.ts</code> 固定直接写入白名单，并阻止旧控制器和变更网关标识回流。</td><td>调整例外前必须先说明新的稳定边界，不能仅为通过测试扩大白名单。</td></tr>
+      <tr><td>范围边界</td><td><code>logic</code> 下的独立逻辑图画布子系统不属于本阶段主画布迁移范围；选中态属于界面状态，不作为业务图数据旁路。</td><td>逻辑图统一、历史记录、撤销重做和协作协议升级必须作为独立需求重新立项。</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>执行结果（2026 年 7 月 16 日）：</strong>生产变更旁路、遗留兼容命名、分层依赖、调试映射和当前文档基线均已完成复核；未发现需要继续迁移的主画布业务用例。类型检查、差异检查、生产构建和 ICCE 全量 Vitest 回归均已通过，共 84 个测试文件、311 条用例。阶段四满足停止条件，后续只在出现明确业务目标或稳定边界变化时开启新计划。
+  </div>
+
+  <h2>十六、迁移规则</h2>
+  <ul>
+    <li>每次只迁移一个完整用例，不做半套入口搬迁。</li>
+    <li>不得让同一用例同时存在两套业务编排实现。</li>
+    <li>事务由用例边界决定，Runtime 参与当前事务，不在子步骤重复开启事务。</li>
+    <li>事件只在一个明确层发布一次，禁止控制器、网关和命令重复发布。</li>
+    <li>领域规则缺字段时保持空值，不用其他字段冒充补齐。</li>
+    <li>测试文档和回归说明统一放在 <code>icce/tests</code>。</li>
+  </ul>
+
+  <h2>十七、停止条件与验收</h2>
+  <ul>
+    <li>网关业务代码行数持续下降，而不是继续增长。</li>
+    <li>完成用例后，对应 <code>CanvasController</code> 业务入口被删除。</li>
+    <li>应用层不再直接依赖控制器，Runtime 不包含业务策略。</li>
+    <li>关键行为的返回值、状态变化、事件顺序和事务记录保持一致。</li>
+    <li>每个用例完成后执行类型检查、<code>git diff --check</code> 和对应 Vitest 回归。</li>
+  </ul>
+
+  <div class="decision">
+    阶段四已满足以上停止条件并正式结束。若后续处理独立逻辑图画布、历史记录、撤销重做或协作协议，应建立新的目标、范围和验收标准，不延续本阶段候选用例队列。
+  </div>
+
+  <h2>十八、后续方向状态</h2>
+  <p>以下方向来自当前代码依赖、生产构建结果与历史暂缓项的复核。阶段六结束后已重新核对实际完成状态；标记暂缓或条件性的方向不得自动进入实施。</p>
+  <table>
+    <thead><tr><th>优先级</th><th>方向</th><th>当前实际缺口</th><th>目标边界</th></tr></thead>
+    <tbody>
+      <tr><td>已完成</td><td>领域模型与稳定规则归位</td><td>图形、连线、关系、图类型、变更计划及主要几何、富文本、查询和路由规则已归入 <code>domain</code>；校验目标已改为领域最小数据结构，后端树节点由基础设施适配器显式映射。</td><td>架构守卫确认领域层不依赖画布表现目录、Vue、Pinia、API DTO 或全局 Store；后续仅在出现新业务规则时按同一边界增量维护。</td></tr>
+      <tr><td>已完成</td><td>应用端口与装配边界</td><td><code>CanvasMutationRuntime</code>、变更契约、选择和快照已归入应用层，具体仓库和事务只在基础设施组合根装配；交互权限由 UI 入口消费。</td><td>架构守卫确认应用命令只依赖应用契约、端口与领域能力，不反向依赖画布、基础设施、根级权限实现或页面状态。</td></tr>
+      <tr><td>按决策完成</td><td>生产入口与调试构建隔离</td><td>权限模拟器、校验模拟器、事件检查器和调试面板已集中到动态调试宿主，仅在开发模式或显式调试构建中加载；正式生产环境忽略本地权限绕过值。</td><td>调试示例路由、关闭状态的逻辑图入口和额外构建守卫按既定范围不处理；不得据此扩展为新的自动候选项。</td></tr>
+      <tr><td>已完成</td><td>桶导出与循环分块治理</td><td><code>canvas/store/index.ts</code> 与 <code>canvas/commands/index.ts</code> 已删除，目录内部调用方已改为直接引用具体仓库、命令或基础设施状态文件。</td><td>持续禁止同目录实现反向依赖桶入口；生产构建不得重新出现 ICCE 工具仓库与工具栏命令的跨分块循环依赖。</td></tr>
+      <tr><td>已完成</td><td>查询适配器与剩余控制器整理</td><td>查询装配已归入基础设施适配器，高亮薄控制器已删除；视口控制器归入 UI 状态层，纯视口适配计算已拆为无 Store 依赖的规划函数。</td><td>查询通过明确适配器提供，高亮消费者直连 UI 状态，视口交互编排与纯计算分离。</td></tr>
+      <tr><td>按决策暂缓</td><td>状态仓库职责归位</td><td><code>canvas/store</code> 已退场，图数据仓库与 UI 状态已分开；根级 <code>store/icceStore.ts</code> 仍与详情页 API 会话、权限、路由、树数据、弹窗和布局紧密耦合。</td><td>该项属于已跳过的六-四，并受详情页布局回归约束；没有独立视觉交互基线和重新立项授权时不得拆分。</td></tr>
+      <tr><td>暂缓</td><td>详情页组合根拆分</td><td><code>icce-detail.vue</code> 与分栏高度、底部结构树抽屉、画布 resize 和多图类型视图存在紧密布局耦合；本轮拆分曾导致底部空白、抽屉展开收起及拖拽尺寸回归，相关改动已完整回退。</td><td>按当前决策保留详情页现状，不再作为阶段五或后续自动候选项；只有建立覆盖浏览器缩放、分栏、结构树抽屉和多图类型切换的视觉交互回归基线后，才可独立重新立项。</td></tr>
+      <tr><td>已完成</td><td>架构守卫扩展</td><td>守卫已覆盖控制器与网关退场、核心状态写入例外、各层依赖方向、物理目录归位、测试路径与真实模拟目标，以及协作协议、传输、回放和生命周期边界。</td><td>新增代码继续遵守现有守卫；只有引入新的架构边界时才增加规则，不为已明确暂缓的详情页拆分预建守卫。</td></tr>
+      <tr><td>已完成</td><td>专题文档现状同步</td><td>仓库复核确认不存在旧整体架构、协作、多图类型、正交线或富文本独立专题文件；现存文档仅为本重构方案与已知问题台账。</td><td>主重构方案作为唯一架构基线；已知问题页面及数据只记录业务问题状态，不定义分层、目录或迁移路径。</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong>专题文档复核结果（2026 年 7 月 17 日）：</strong>对 <code>src/views/icce</code> 及仓库内全部 HTML、Markdown 文档完成清点，
+    历史清单中提到的整体架构、多人协作、多图类型、正交线和富文本独立专题文件均不存在，无需继续维护虚构的同步队列。
+    <code>ICCE功能架构重构方案.html</code> 保持为唯一当前架构基线；<code>dfd-issues-todo.html</code> 与
+    <code>dfd-issues-data.js</code> 仅作为已知问题展示与数据源，不得反向定义生产架构。目标目录中的文档清单已同步为真实文件，专题文档现状同步项完成。
+  </p>
+
+  <h2>十九、理想架构差异复核与阶段六计划</h2>
+  <p>
+    2026 年 7 月 17 日阶段六第五批第三轮完成后：<code>application</code> 30 个文件、
+    <code>domain</code> 39 个文件、<code>infrastructure</code> 28 个文件、<code>ui</code> 19 个文件，而
+    <code>canvas</code> 仍有 131 个文件。数量本身不是验收指标；基础设施反向依赖和画布复合用例装配已清零，
+    后续差异主要集中在 legacy Store、巨型交互组件和物理 UI 目录，不能解释为单纯目录命名不同。
+  </p>
+  <div class="warning">
+    历史章节中的“理想目录”是方向参考，不再作为逐文件搬迁清单：其中把 tool、viewport、preview、interaction Store
+    放入 Infrastructure、把 demo 放入 app 等内容已被阶段五决策修正。当前 vNext 目标以依赖方向为主：
+    Application 只依赖端口与 Domain；Domain 不依赖 API/UI/Store；Infrastructure 不依赖 canvas/UI；
+    UI/canvas 只能通过应用入口修改核心状态。页面 <code>icce-detail.vue</code> 拆分已明确暂缓，不纳入阶段六。
+  </div>
+  <table>
+    <thead><tr><th>批次</th><th>执行内容</th><th>当前证据</th><th>完成标准</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>六-零</td>
+        <td>纠偏目标树与依赖基线</td>
+        <td>阶段五完成结论与实际依赖不一致；历史理想树本身存在 Store 归属、demo 入口和 debug 命名冲突。</td>
+        <td>当前基线明确“已完成核心用例迁移，但物理分层未完成”，形成阶段六队列并保留条件性边界。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-一</td>
+        <td>补严守卫并清理授权、领域 DTO 反向依赖</td>
+        <td>删除选择权限已收口到快捷键和上下文工具栏等 UI 入口；领域校验树节点只保留规则所需字段，基础设施负责 API 数据映射。</td>
+        <td>守卫已禁止 Application → 根级 store/permissions、Domain → API/store；应用命令不接收授权回调。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-二</td>
+        <td>清算 Infrastructure → canvas 反向依赖</td>
+        <td>三个原子执行器归入应用执行层，提交态失效规则归入领域服务，协作回放归入基础设施协作目录，事件载荷和通用节流能力迁入各自真实归属。</td>
+        <td>整个 Infrastructure 已禁止依赖 canvas/UI，旧命令、回放、失效规则和节流路径均已删除，不保留兼容转发或白名单例外。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-三</td>
+        <td>拆分 canvas 复合用例</td>
+        <td>上下文变更、线上插入、快速添加、区域快照和自动区域创建均已建立应用命令与领域规划，接口和仓库在基础设施组合根装配。</td>
+        <td><code>canvas/commands</code> 只保留上下文交互分发和工具栏界面动作，不再读取仓库、开启事务、调用接口或创建具体变更门面。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-四</td>
+        <td>拆分 legacy 页面与布局状态 Store</td>
+        <td><code>store/icceStore.ts</code> 同时承载详情 API、权限来源、路由、WebSocket、树数据、弹窗状态和视口配置。</td>
+        <td>树抽屉布局状态由详情页会话通过依赖注入共享，视口持久化与页面数据会话分别管理；不改变 <code>icce-detail.vue</code> 模板、分栏或结构树布局。</td>
+        <td>按决策跳过</td>
+      </tr>
+      <tr>
+        <td>六-五</td>
+        <td>收口巨型交互组件与弹窗会话</td>
+        <td>端点重连与区域/图形缩放会话已移出 <code>SelectionLayer.vue</code>；数据字典表单、列表会话与拖拽以及模板覆盖模型均已按业务 feature 收口。</td>
+        <td>先提取无模板/无布局改动的交互会话和纯规划器，再按业务 feature 收口列表、表单和详情会话；物理目录迁移留到六-六，不在本批修改页面入口或抽屉布局。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-六</td>
+        <td>物理目录与测试可信度收口</td>
+        <td>工具、组件和类型仍主要位于 canvas；大量测试仍按旧 canvas 路径分类，并存在未命中真实依赖的旧 Store mock。</td>
+        <td>在依赖清算后按稳定边界迁移 <code>ui/tools</code>、<code>ui/components</code>、测试目录和根级 components/dialog；修正旧 mock 并由守卫锁定新路径。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>六-七</td>
+        <td>拆分协作宿主职责</td>
+        <td>原 <code>infrastructure/collab/useCollabSync.ts</code> 混合 Vue 生命周期、路由过滤、WebSocket、协议编解码、选择广播和远端回放。</td>
+        <td>拆为纯协议 codec、transport adapter、replay adapter 与 UI/app 生命周期宿主；保持现有 wire payload 和远端直接回放语义，不升级协作协议。</td>
+        <td>已完成</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>六-一执行结果（2026 年 7 月 16 日，后续权限边界已更新）：</strong>删除选择应用命令不再导入根级权限实现，也不接收删除授权端口；快捷键和上下文工具栏等 UI 入口分别按实际交互判断“普通图形及连线”与“区域”权限，再通过同一应用门面执行删除计划。领域校验目标移除后端接口数据类型，只保留负责人编号等规则实际使用字段，
+    由校验上下文适配器完成树节点映射。架构守卫新增真实路径解析，阻止应用层反向依赖权限与页面 Store、
+    领域层反向依赖接口和全局 Store。类型检查、差异检查、ICCE 全量 87 个测试文件共 328 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-二执行结果（2026 年 7 月 16 日）：</strong>包含关系写入、关联连线同步和连线平移三个无界面执行器迁入
+    <code>application/execution</code>，Mutation Runtime 不再依赖画布命令；区域提交态失效迁入纯领域服务，
+    关系 Store 查询通过显式上下文注入。协作回放迁入基础设施协作目录并保持远端规范载荷直接投影语义，
+    通用节流迁出画布目录供协作和界面共同使用；上下文事件载荷与视口事件类型由基础设施事件通道直接声明。
+    架构守卫升级为真实路径检查，整个基础设施层不得依赖 <code>canvas</code> 或 <code>ui</code>，六个旧生产入口和三个旧测试路径已直接删除。
+    类型检查、差异检查、ICCE 全量 87 个测试文件共 328 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-三执行结果（2026 年 7 月 16 日）：</strong>上下文删除、区域清空、属性更新、图层排序、箭头切换和线上插入统一进入
+    应用上下文命令；线上插入与快速添加的图形、锚点和替代连线计算下沉领域服务，失败补偿和选择结果由应用用例统一编排。
+    区域快照覆盖与空图自动补区域分别建立应用命令，接口加载、快照规范化和仓库装配留在基础设施组合根；自动补区域权限由 UI 生命周期入口判断。
+    原四个画布复合命令文件直接删除，保留的上下文命令缩减为意图分发、视口动作、事件通知和确认展示。
+    新增守卫禁止画布命令直接依赖仓库、事务、接口或创建变更门面；相关测试按应用、领域和基础设施边界归位。
+    类型检查、差异检查、ICCE 全量 89 个测试文件共 332 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-四处理决定（2026 年 7 月 16 日）：</strong>本批次按当前决策直接跳过，不拆分 legacy 页面状态 Store，
+    不调整 <code>icce-detail.vue</code> 页面结构、分栏状态或底部结构树布局；后续只有在出现独立业务收益并重新确认范围时才恢复。
+  </p>
+  <p>
+    <strong>六-五首轮执行结果（2026 年 7 月 16 日）：</strong>连线端点控制点规划、文字编辑排除、权限结果消费和重连会话组装
+    已迁入独立交互模块，<code>SelectionLayer.vue</code> 只保留当前选择数据装配与事件转发；新增架构守卫阻止组件重新直接拼装重连会话。
+    数据字典新增与详情弹窗共用初始值、详情回填、类型切换清理、设备名称解析、加工数据标签解析和提交序列化模型，
+    未修改两个弹窗的模板、样式和布局。类型检查、差异检查、ICCE 全量 91 个测试文件共 340 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-五第二轮执行结果（2026 年 7 月 17 日）：</strong><code>SelectionLayer.vue</code>
+    中的区域与图形缩放约束、实时变更、事务提交、快照记录、功能图包含关系刷新和交互收尾已收口到
+    <code>selection-resize-interaction.ts</code>；最小尺寸约束迁入纯规则模块。选区组件只装配画布依赖并保留模板事件绑定，
+    未修改模板、样式、详情页或结构树布局。同时修正合并后逻辑图工具栏残留的分栏状态旧导入，仅指向已迁移的界面状态实现，不改变逻辑图行为。
+    架构守卫已阻止缩放编排回流组件；类型检查、差异检查、ICCE 全量 92 个测试文件共 345 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-五第三轮执行结果（2026 年 7 月 17 日）：</strong>数据字典新增/编辑与详情弹窗的九个字段配置
+    已收口到 <code>data-dict-form.ts</code>，统一表单值模型、字段顺序、动态标签、显隐条件、校验规则、类型切换、设备位置和加工数据联动。
+    两个弹窗仍保留各自的加载、保存、权限和只读会话，未修改模板、样式或业务结果；架构守卫阻止字段配置重新回流弹窗。
+    类型检查、差异检查、ICCE 全量 93 个测试文件共 350 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-五第四轮执行结果（2026 年 7 月 17 日）：</strong>数据字典列表的加载与模块编号回填、表格刷新、
+    编辑删除权限动作、删除确认与画布移除通知、当前记录编号已收口到显式列表会话；接口、权限、事件通道、拖拽载荷和整行拖拽锚点
+    统一组织在单个 <code>data-dict-list-session.ts</code> feature 文件中，并通过内部函数边界区分纯流程与生产装配。列表组件只保留表格、工具栏、拖拽预览和用户事件绑定，
+    模板与样式未修改，分页参数、弹窗打开方式、拖拽载荷和删除通知保持不变。架构守卫阻止请求、删除和整行拖拽编排回流列表组件；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 357 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-五第五轮执行结果（2026 年 7 月 17 日）：</strong>模板覆盖弹窗的表单初始值、叶子节点选择树装饰、
+    目标区域选项、字段配置与名称联动、目标区域准入和覆盖请求参数已统一收口到单个 <code>template-dialog-model.ts</code>；
+    客户名称按模板列表真实返回的 <code>customer_name</code> 字段映射，不使用其他字段兜底。
+    区域名称读取通过显式依赖注入保留现有规则，表单组件只装配树源与 Store、执行校验和调用覆盖用例；模板列表仍负责模板选择与新窗口查阅。
+    弹窗模板、样式、覆盖语义和查阅方式均未修改，架构守卫阻止表单模型和覆盖计划回流组件；
+    类型检查、差异检查、ICCE 全量 96 个测试文件共 364 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六首轮执行结果（2026 年 7 月 17 日）：</strong>数据字典列表、新增/编辑、详情弹窗与模板列表、覆盖弹窗
+    已迁入 <code>ui/dialog/features/data-dict</code> 和 <code>ui/dialog/features/template</code>，通用拖拽弹窗壳迁入
+    <code>ui/dialog/shared/DraggableDialog.vue</code>；所有组件使用带业务语义的文件名，详情页与条件编辑器直接引用新真实路径，
+    旧 <code>dialog/DataDict</code>、<code>dialog/Template</code> 文件全部删除且不保留兼容转发。架构守卫禁止旧目录引用回流；
+    本轮只修改导入路径，不调整详情页结构、弹窗模板样式、业务流程或结构树布局。类型检查、差异检查、ICCE 全量
+    96 个测试文件共 365 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第二轮执行结果（2026 年 7 月 17 日）：</strong>审批、条件编辑器和区域弹窗分别迁入
+    <code>ui/dialog/features/approval</code>、<code>condition-editor</code> 与 <code>region</code>，条件编辑会话随业务 feature 归位；
+    多弹窗共用的画布读写桥迁入 <code>ui/dialog/bridge/useCanvasDialogBridge.ts</code>，条件编辑、区域和结构树调用方均直接引用新路径。
+    旧根级弹窗、条件编辑目录和两个旧 composable 文件已删除且不保留转发；未为审批和区域制造无复用收益的薄会话文件。
+    本轮未修改弹窗模板、样式、业务流程或结构树布局，详情页仅调整条件编辑器及会话导入路径。架构守卫阻止旧路径回流；
+    类型检查、差异检查、ICCE 全量 96 个测试文件共 366 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第三轮执行结果（2026 年 7 月 17 日）：</strong>快照装载、画布变更运行时与事务同步四个基础设施测试
+    已移除不再命中真实依赖链的权限、权限调试和页面状态 Store 替身；两个快照装载测试同时移除未参与被测链路的编号生成替身，
+    事务与运行时测试仍保留真实参与操作编号生成的替身。新增架构守卫扫描全部 ICCE 测试中的本地模块模拟，要求相对路径和源码别名
+    均解析到真实存在的 JavaScript、TypeScript 或 Vue 模块，并阻止上述基础设施写入测试重新伪造页面授权与页面状态依赖。
+    本轮未修改生产源码、页面结构、弹窗模板样式或结构树布局；类型检查、差异检查、ICCE 全量 96 个测试文件共 368 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第四轮执行结果（2026 年 7 月 17 日）：</strong>三个无界面执行器测试迁入应用执行目录，删除计划测试合并到既有删除应用命令测试；
+    图表生命周期测试迁入界面组合逻辑目录，图形仓库集成测试迁入基础设施仓库目录，图表规则、校验内容规则和图形富文本模型测试迁入领域目录。
+    纯领域校验测试同时移除不再参与被测链路的用户、页面状态和接口替身；旧画布命令、状态仓库、校验及领域规则测试路径直接删除，不保留重复测试或兼容转发。
+    新增架构守卫要求 <code>tests/canvas</code> 下的测试必须实际依赖画布实现，防止已归位的测试重新回流旧分类。
+    本轮未修改生产源码、页面结构或结构树布局；类型检查、差异检查、ICCE 全量 95 个测试文件共 369 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第五轮执行结果（2026 年 7 月 17 日）：</strong>数据字典与模板弹窗共用的动态表单字段渲染器迁入
+    <code>ui/dialog/shared/DynamicFormFields.vue</code>，画布工具栏共用的图标容器迁入 <code>ui/components/common/IconBox.vue</code>；
+    调用方直接引用新真实路径，旧根级组件文件删除且不保留兼容转发。架构守卫阻止两个旧组件路径和旧导入重新出现。
+    本轮按最新决策暂停测试目录整理，未修改详情页、节点表单、顶部信息栏、画布外壳或结构树布局，也未改变组件样式和交互；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 370 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第六轮执行结果（2026 年 7 月 17 日）：</strong>工具栏容器、工具按钮与可拖拽工具图标三个纯界面组件从
+    <code>canvas/components/tools</code> 迁入 <code>ui/components/tools</code>，画布组件直接引用新真实路径；组件内部对工具类型、拖拽控制器、
+    工具栏命令和权限能力的跨目录引用改为明确源码别名，底层工具行为及命令仍保留在原有边界。旧组件文件直接删除且不保留兼容转发，
+    架构守卫阻止旧目录和旧导入回流。本轮未调整工具栏模板、样式、交互结果、页面及结构树布局，也未继续整理测试目录；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 371 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第七轮执行结果（2026 年 7 月 17 日）：</strong>上下文工具栏、浮动工具栏和快速添加浮层从
+    <code>canvas/components/overlays</code> 整体迁入 <code>ui/components/overlays</code>，画布入口直接引用新真实路径。
+    其中上下文工具栏与快速添加浮层继续作为界面交互编排宿主，未为迁移制造额外薄封装；组件对画布命令、界面状态、基础设施查询及领域规则的
+    跨目录相对引用改为明确源码别名。旧组件文件直接删除且不保留兼容转发，架构守卫阻止旧目录和旧导入回流。
+    本轮未修改浮层模板、样式、交互结果、页面或结构树布局，也未继续整理测试目录；类型检查、差异检查、ICCE 全量
+    95 个测试文件共 372 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第八轮执行结果（2026 年 7 月 17 日）：</strong>十四个工具栏按钮组件、工具栏类型、弹层命中规则及桶入口共十七个文件从
+    <code>canvas/components/toolbar</code> 整体迁入 <code>ui/components/toolbar</code>，画布入口、界面事件宿主、上下文状态与浮层组件均直接引用新真实路径。
+    桶入口补齐连线类型按钮导出，浮动工具栏不再绕过桶入口引用具体文件；工具栏组件对画布属性读取的跨目录相对引用改为明确源码别名。
+    旧目录文件直接删除且不保留兼容转发，架构守卫同时校验全部旧文件退场和新组件族完整存在。本轮未修改工具栏模板、样式、交互结果、
+    页面或结构树布局，也未继续整理测试目录；类型检查、差异检查、ICCE 全量 95 个测试文件共 373 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第九轮执行结果（2026 年 7 月 17 日）：</strong>图形元素、富文本渲染器、连接点与连线控制点、图形渲染器、
+    四个静态图形资源共十三个文件从 <code>canvas/components/shapes</code> 整体迁入 <code>ui/components/shapes</code>，
+    主图层、预览图层和图形轮廓配置直接引用新真实路径。控制点和富文本组件继续作为界面交互宿主，画布变更仍通过既有门面执行；
+    用户图形渲染已固定使用图片且不存在运行时切换入口，因此删除单常量配置文件，并清理主渲染、预览渲染、选中轮廓中的不可达路径模式分支及其配置生成器。
+    跨目录相对引用统一改为明确源码别名，旧组件与资源直接删除且不保留兼容转发。架构守卫校验旧文件退场、新组件族完整存在，
+    并禁止新组件重新使用跨层向上相对引用。本轮未修改图形模板、样式、渲染或交互结果，也未继续整理测试目录；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 374 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十轮执行结果（2026 年 7 月 17 日）：</strong>背景、主渲染、选择与预览四个画布图层组件从
+    <code>canvas/components/layers</code> 整体迁入 <code>ui/components/layers</code>，画布入口直接引用新真实路径。
+    选择图层继续作为当前选择数据、命中事件和交互会话的界面宿主，拖拽、缩放与端点重连仍委托既有交互模块，未重新内联执行逻辑；
+    图层组件对画布工具、常量和查询的跨目录引用统一改为明确源码别名。旧组件直接删除且不保留兼容转发，原有选择图层职责守卫切换到新路径，
+    新增守卫校验旧文件退场、新图层完整存在并禁止跨层向上相对引用。本轮未修改图层模板、样式、渲染或交互结果，也未继续整理测试目录；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 375 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十一轮执行结果（2026 年 7 月 17 日）：</strong>画布宿主与拖拽接收两个组件从
+    <code>canvas/components/canvas</code> 整体迁入 <code>ui/components/canvas</code>，详情页与调试示例仅调整组件导入路径，
+    事件调试目录同步更新真实源码位置。组件对画布交互、常量、富文本注册与节点工具的跨目录引用统一改为明确源码别名，
+    旧组件直接删除且不保留兼容转发；架构守卫校验旧文件退场、新宿主完整存在，并禁止跨层向上相对引用。本轮未修改宿主模板、样式、
+    页面结构、结构树抽屉及其布局或交互，也未继续整理测试目录；类型检查、差异检查、ICCE 全量 95 个测试文件共 376 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十二轮执行结果（2026 年 7 月 17 日）：</strong>基础信息表单与节点信息表单共用的版本差异展示组件从
+    根级 <code>components</code> 迁入 <code>ui/components/common</code>，两个调用方直接引用新真实路径。该组件继续负责版本字段变更提示、
+    权限遮罩与用户信息展示，不增加兼容转发或额外包装；既有共享组件架构守卫同步覆盖旧文件退场、旧导入禁止和新路径存在。
+    本轮未移动节点信息表单，未修改结构树抽屉、详情页、组件模板、样式或交互，也未继续整理测试目录；类型检查、差异检查、
+    ICCE 全量 95 个测试文件共 376 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十三轮执行结果（2026 年 7 月 17 日）：</strong>生产使用的基础信息表单与字段渲染组件共同迁入
+    <code>ui/detail/basic-info</code>，字段渲染组件改用业务语义名称，详情页仅切换表单导入路径。原 <code>BasicInfoForm</code>
+    目录中其余五个文件没有生产消费者，且备用入口依赖已不存在的组件，作为不可达遗留实现一并删除；旧根级字段组件同步退场，未保留兼容转发。
+    新增架构守卫校验全部旧文件删除、旧导入禁止及两个新组件完整存在。本轮未修改详情页模板、基础信息表单模板、样式、提交逻辑或交互，
+    也未触碰顶部栏、画布顶部工具区、结构树抽屉及测试目录；类型检查、差异检查、ICCE 全量 95 个测试文件共 377 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十四轮执行结果（2026 年 7 月 17 日）：</strong>详情顶部信息栏及其唯一子组件客户场地信息从根级
+    <code>components</code> 整体迁入 <code>ui/detail/header</code>，两个组件保持同一详情界面边界，详情页仅切换顶部信息栏导入路径。
+    子组件引用改为同目录真实路径，旧组件直接删除且不保留兼容转发；新增架构守卫校验旧文件退场、旧导入禁止和新组件完整存在。
+    本轮未拆分顶部信息栏内部逻辑，未修改详情页或顶部信息组件的模板、样式、权限、校验、提交与审批行为，也未触碰画布顶部工具区、
+    结构树抽屉及测试目录；类型检查、差异检查、ICCE 全量 95 个测试文件共 378 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十五轮执行结果（2026 年 7 月 17 日）：</strong>节点信息表单从根级 <code>components</code> 迁入
+    <code>ui/dialog/features/node-info</code>，与既有表单模型和树节点映射器归入同一业务 feature；表单对模型改用同目录真实路径，
+    结构树底部抽屉仅切换一条组件导入路径。旧组件直接删除且不保留兼容转发，新增架构守卫校验旧文件退场、旧导入禁止和新组件存在。
+    本轮未修改节点表单或结构树抽屉的模板、样式、字段映射、校验、展开收起、尺寸调整及窗口高度适配逻辑，也未继续整理测试目录；
+    类型检查、差异检查、节点表单定向测试、ICCE 全量 95 个测试文件共 379 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十六轮执行结果（2026 年 7 月 17 日）：</strong>画布顶部工具区从根级
+    <code>components/canvasTop.vue</code> 迁入 <code>ui/components/canvas/CanvasTop.vue</code>，与画布宿主和拖拽接收组件归入同一界面目录；
+    画布宿主改用同目录真实路径，组件对节点聚焦查询和图形属性读取的跨目录相对引用改为明确源码别名。旧组件直接删除且不保留兼容转发，
+    既有画布宿主架构守卫扩展覆盖旧根级路径、新组件完整性和跨层向上相对引用，根级 <code>components</code> 已无生产文件。
+    本轮未拆分画布顶部工具区，未修改模板、样式、搜索、定位、未绑定节点清单、权限或高亮行为，也未继续整理测试目录；
+    类型检查、差异检查、ICCE 全量 95 个测试文件共 379 条 Vitest 用例和生产构建均已通过。
+  </p>
+  <p>
+    <strong>六-六第十七轮大批次执行结果（2026 年 7 月 17 日）：</strong>十三个有效画布组合模块从
+    <code>canvas/composables</code> 按职责分别迁入 <code>ui/canvas/composables</code>、<code>ui/tools/keyboard</code>、
+    <code>ui/tools/pointer</code> 和 <code>ui/components/overlays</code>，二十五个工具契约、注册、绘制行为、指针、选择拖拽与缩放模块整体从
+    <code>canvas/tools</code> 迁入 <code>ui/tools</code>。纯画布常量、关系查询、节点解析和渲染计算继续保留在 <code>canvas</code>，
+    新界面模块通过明确源码别名依赖这些运行时能力；生产组件、画布命令、状态、调试事件目录和相关测试引用统一切换到新真实路径，旧目录不保留兼容转发。
+    原组合目录中与逻辑图编辑器近乎重复的编辑器副本和没有消费者的区域弹窗状态模块直接删除，逻辑图真实使用的 <code>logic/composables/useEditor.ts</code> 保持原位不动；
+    图生命周期从宽泛的 <code>ui/composables</code> 归入画布组合目录。集中架构守卫校验全部三十八个有效文件退场与新路径完整性，
+    禁止旧别名和跨边界多级相对引用回流；测试目录按既定决策暂不移动，守卫在最终统一清理前
+    同时识别画布运行时和新界面交互实现。中间只执行类型检查及 18 个相关测试文件共 91 条用例，整批结束后执行一次 ICCE 全量
+    95 个测试文件共 380 条 Vitest 用例和生产构建，全部通过；本批未修改工具行为、画布交互结果、组件模板或样式。
+  </p>
+  <p>
+    <strong>六-六第十八轮大批次执行结果（2026 年 7 月 17 日）：</strong>左右结构树抽屉、底部抽屉布局和树选择同步四个文件整体迁入
+    <code>ui/dialog/features/tree</code>，树源、树工具和异步表单会话三个跨弹窗组合模块迁入 <code>ui/dialog/shared</code>；详情页、区域、模板和数据字典弹窗
+    统一引用新真实路径，根级 <code>dialog</code> 已无生产文件。七个迁移候选均未被 <code>logic</code> 引用，逻辑图目录和依赖保持不动。
+    底部结构树抽屉与迁移前逐行比较，除三条导入路径外没有任何差异，模板、样式、展开收起、尺寸调整和窗口高度适配代码均未修改；
+    集中架构守卫校验旧目录退场、旧导入禁止和新 feature/shared 文件完整存在。中间通过类型检查及 3 个相关测试文件共 43 条用例，整批结束后
+    ICCE 全量 95 个测试文件共 381 条 Vitest 用例和生产构建均通过。
+  </p>
+  <p>
+    <strong>六-六第十九轮最终验收结果（2026 年 7 月 17 日）：</strong>十八个测试文件按最终生产边界一次性归入
+    <code>tests/ui/canvas</code>、<code>tests/ui/tools</code> 与 <code>tests/infrastructure/stores</code>，一组错位在工具行为目录、实际只验证画布关系访问的用例
+    合并到既有关系访问测试；旧 <code>tests/canvas/composables</code>、<code>tests/canvas/tools</code>、<code>tests/ui/composables</code>
+    和根级选择状态测试路径完成退场。迁移测试对生产边界的多级相对引用与模拟统一改为明确源码别名，架构守卫从兼容新旧实现的过渡规则收紧为
+    测试目录必须与画布运行时、界面画布、界面工具边界一致，并继续校验模拟目标真实存在。中间通过类型检查及 20 个相关测试文件共 100 条用例，
+    最终差异检查、ICCE 全量 94 个测试文件共 381 条 Vitest 用例和生产构建均通过；阶段六第六批完成并冻结当前物理目录基线。
+  </p>
+  <p>
+    <strong>六-七执行结果（2026 年 7 月 17 日）：</strong>原基础设施协作同步组合函数拆为
+    <code>drag-message-codec.ts</code>、<code>drag-message-dispatcher.ts</code>、<code>ws-collab-transport.ts</code>、
+    既有 <code>canvas-replay-applier.ts</code> 与 <code>ui/collaboration/useCollabSync.ts</code> 五个明确边界。协议编码只映射现有图形、连线、包含关系和选择载荷；
+    消息分发器只处理实时变更节流、同目标合并和提交前刷新；传输适配器只封装现有 WebSocket 发送与订阅；远端回放继续按当前图类型过滤后直接写入状态；
+    界面宿主只负责路由范围、选择监听、事件订阅、远端回放抑制和卸载清理。画布宿主与调试事件目录改用新真实路径，旧基础设施宿主不保留兼容转发，
+    生命周期宿主测试同步归入 <code>tests/ui/collaborationoration</code>；逻辑图目录未引用这些迁移候选，保持不动。架构守卫锁定五个边界并禁止协议、分发与回放模块依赖
+    Vue、路由或 WebSocket 状态宿主。既有消息类型、模块名、业务编号、图类型字段、保存标记、远端直接回放和刷新语义均未改变，也未增加命令式协议元数据。
+    类型检查、3 个相关测试文件共 40 条用例、差异检查、ICCE 全量 94 个测试文件共 382 条 Vitest 用例和生产构建均通过；阶段六按当前决策完成。
+  </p>
+  <div class="decision">
+    <strong>六-六最终执行结果：</strong>画布顶部工具区、画布交互编排、工具系统、结构树宿主与测试目录已全部按稳定职责边界归位，
+    根级组件与对话框生产文件、旧画布交互目录及旧测试路径均已退场；下一批启动六-七协作宿主拆分。
+    目录调整必须建立在职责和依赖收益上，不为追求形式一致批量移动仍属于画布运行时的常量、查询与纯计算工具。
+    每批候选必须先检查 <code>src/views/icce/logic</code> 的入向依赖；被逻辑图引用的文件保持现有真实路径，不纳入主画布目录迁移。
+  </div>
+  <table>
+    <thead><tr><th>顺序</th><th>剩余批次</th><th>主要调整</th><th>完成标准</th><th>约束</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>画布顶部工具区归位（已完成）</td>
+        <td>将根级 <code>components/canvasTop.vue</code> 迁入 <code>ui/components/canvas/CanvasTop.vue</code>。</td>
+        <td>画布宿主直接引用新真实路径，根级 <code>components</code> 清空，并由架构守卫禁止旧路径回流。</td>
+        <td>只做物理迁移，不拆分组件，不修改模板、样式、搜索、定位、未绑定节点或权限行为。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>画布交互编排分类（已完成）</td>
+        <td>逐项审计 <code>canvas/composables</code>，将画布生命周期与通用画布编排、键盘交互、指针状态、浮层状态和结构树同步分别归入对应界面边界。</td>
+        <td>界面宿主不再从旧画布组合目录取得交互编排；纯画布查询、渲染计算和节点工具保留在 <code>canvas</code>。</td>
+        <td>先分类再迁移，不按文件名或目录美观批量搬迁。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>工具系统归位（已完成）</td>
+        <td>按工具契约与注册、指针及绘制行为、选择与拖拽、缩放交互四个稳定组件族，将 <code>canvas/tools</code> 分批迁入 <code>ui/tools</code>。</td>
+        <td>每个组件族均由真实新路径和依赖守卫承接，生产行为与交互结果保持不变。</td>
+        <td>测试目录暂不随单批搬迁，避免生产迁移与最终测试清理交叉。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>结构树宿主独立评估（已完成）</td>
+        <td>最后评估左右结构树抽屉及其组合逻辑是否迁入 <code>ui/dialog/features/tree</code>。</td>
+        <td>只有在存在明确边界收益且能验证展开、收起、尺寸调整和窗口高度适配时才迁移。</td>
+        <td>不得重写底部抽屉布局；若只有目录美观收益则保留现状并记录理由。</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>测试目录最终统一清理（已完成）</td>
+        <td>生产目录稳定后一次性对齐测试路径、修正失效模拟、合并重复守卫并清理旧目录命名。</td>
+        <td>全部测试继续集中在 <code>src/views/icce/tests</code> 并使用 Vitest，测试引用与最终生产边界一致。</td>
+        <td>不在生产组件迁移批次中穿插纯测试目录整理。</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>六-六验收与六-七准备（已完成）</td>
+        <td>确认根级组件退场、旧路径守卫完整、保留目录均有职责理由，再冻结最终目录基线。</td>
+        <td>类型检查、ICCE 全量 Vitest、生产构建和差异检查通过；随后按协议编解码、传输、远端回放与生命周期宿主拆分协作同步。</td>
+        <td>六-七保持现有协作消息载荷和远端直接回放语义，不升级协议。</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="decision">
+    <strong>六-五弹窗组织决策：</strong>弹窗继续按数据字典、模板、条件编辑器、区域和结构树等业务 feature 组织，
+    不新增横向的 <code>list/</code>、<code>form/</code>、<code>detail/</code> 顶层目录。列表、表单和详情是同一 feature
+    内的界面角色，不应成为跨业务聚合边界。数据字典新增/编辑与详情弹窗保留为两个独立外壳：
+    前者承担完整编辑，后者承担富文本入口和受限字段编辑；两者共享表单模型与字段配置，不合并为包含大量模式分支的巨型组件。
+  </div>
+  <table>
+    <thead><tr><th>顺序</th><th>后续子批次</th><th>主要调整</th><th>完成标准</th><th>约束</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>共享数据字典字段配置（已完成）</td>
+        <td>将新增/编辑与详情弹窗重复的表单模型、字段清单、可见条件、校验规则和字段联动入口收口为 <code>data-dict-form.ts</code>。</td>
+        <td>两个弹窗不再各自维护整套字段配置；只注入选项、只读范围和变更回调。</td>
+        <td>不修改字段顺序、校验结果、权限结果、模板和样式。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>拆分数据字典列表会话（已完成）</td>
+        <td>从列表组件提取加载刷新、权限动作、删除编排和当前记录状态；将行拖拽锚点与拖拽数据组装拆为独立职责。</td>
+        <td>列表组件只负责表格展示、工具栏和用户事件；请求与动作流程由显式会话承接。</td>
+        <td>保持现有拖拽载荷、删除通知、分页参数和弹窗打开方式。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>收口模板弹窗模型（已完成）</td>
+        <td>提取模板覆盖表单初始值、树选项装饰、目标区域选项和提交前置解析；列表保留选择与查阅入口。</td>
+        <td>模板表单组件不再直接混合树转换、区域解析和覆盖用例参数拼装。</td>
+        <td>不改变模板覆盖业务语义和新窗口查阅行为。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>明确命名与物理迁移（已完成）</td>
+        <td>职责稳定后，在六-六迁入 <code>ui/dialog/features</code>，将通用文件名改为带业务前缀的名称；通用拖拽弹窗壳迁入 <code>shared</code>。</td>
+        <td>调用方直接引用真实 feature 文件，不保留旧目录兼容转发；测试随稳定边界归位。</td>
+        <td>目录迁移不得与业务流程修改、页面入口调整或结构树布局调整混在同一批。</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>建议验收顺序：</strong>先验证数据字典字段模型，再验证新增、编辑、详情受限编辑和富文本入口；
+    随后验证列表刷新、删除、权限和拖拽；最后才执行重命名与目录迁移。每个子批次均需通过类型检查、
+    ICCE 全量 Vitest、生产构建和差异检查，并增加对应职责回流守卫。
+  </p>
+  <p><strong>阶段六明确排除：</strong>不重构 <code>icce-detail.vue</code> 页面结构；不调整底部结构树布局；不启用或并轨逻辑图；不升级协作协议；不建设撤销重做；不因为目录美观批量搬迁无依赖收益的文件。</p>
+  <p><strong>阶段六建议顺序：</strong>六-一 → 六-二 → 六-三 → 六-四 → 六-五 → 六-六；六-七作为独立批次，在不改变 wire 语义的前提下执行。每批必须新增对应依赖守卫并保持类型检查、ICCE 全量 Vitest 与生产构建通过。</p>
+
+  <h2>二十、阶段七主画布交互宿主瘦身计划</h2>
+  <p>
+    阶段六完成物理目录和依赖边界收口后，阶段七只处理仍然同时承担界面事件、命中解析、会话规划和业务分发的巨型主画布宿主。
+    本阶段不再进行目录对齐，不以行数或文件数量作为目标；只有能够形成完整交互职责、独立验证且显著降低宿主依赖的逻辑才允许提取。
+  </p>
+  <table>
+    <thead><tr><th>批次</th><th>范围</th><th>目标</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>七-一</td>
+        <td>选区覆盖层与连线工具</td>
+        <td>将选区语义命中、选择切换、富文本与双击分发收口为覆盖层交互控制器；将连线草稿、目标解析、预览、悬停和端点重连收口为连线交互控制器，组件与工具行为只保留事件和生命周期路由。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>七-二</td>
+        <td>舞台事件与指针工具</td>
+        <td>审计舞台事件宿主和指针工具中仍混合的选择框、拖拽准入、视口手势与快捷交互，仅在能够形成稳定控制器时整体拆分。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>七-三</td>
+        <td>富文本与图形渲染宿主</td>
+        <td>先识别富文本编辑、只读渲染、路径文字和图形渲染器的共享边界；不得为了缩短组件而拆散强耦合的测量、布局与渲染流程。</td>
+        <td>按限定范围完成</td>
+      </tr>
+      <tr>
+        <td>七-四</td>
+        <td>最终守卫与回归验收</td>
+        <td>统一清理阶段七产生的失效测试、重复辅助逻辑和职责回流缺口，完成类型检查、ICCE 全量 Vitest、生产构建与差异检查。</td>
+        <td>已完成</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>七-一执行结果（2026 年 7 月 17 日）：</strong><code>SelectionLayer.vue</code> 中嵌套图形命中优先级、
+    覆盖层语义判定、追加选择切换、富文本标签分发以及图形、连线和条件的双击编辑分发，统一收口到
+    <code>selection-overlay-interaction.ts</code>；组件保留模板绑定、指针事件路由及既有拖拽和缩放会话装配，模板与样式未修改，文件由 1165 行缩减为 859 行。
+    <code>line.tool.ts</code> 中连线草稿配置、目标解析、预览折线、悬停清理、快速连线收尾和端点重连统一收口到
+    <code>line-interaction.ts</code>，工具行为只保留进入退出、指针路由和草稿创建，文件由 651 行缩减为 170 行。
+    两项职责各自集中在一个完整控制器中，没有继续拆成一函数一文件；新增守卫阻止交互细节重新内联宿主。
+    迁移候选均未被 <code>src/views/icce/logic</code> 引用，逻辑图、详情页、结构树抽屉、协作协议、组件模板和样式保持不动。
+    类型检查、差异检查、ICCE 全量 96 个测试文件共 388 条 Vitest 用例和生产构建均通过。
+  </p>
+  <p>
+    <strong>七-二执行结果（2026 年 7 月 17 日）：</strong><code>useStageEvents.ts</code> 中中键平移、滚轮缩放、
+    触控板平移、交互状态收尾和视口事件通知统一收口到 <code>viewport-gesture-interaction.ts</code>；舞台宿主只保留工具切换、
+    画布尺寸、工具事件转发、全局选择清理和挂载卸载，文件由 555 行缩减为 300 行。
+    <code>pointer.tool.ts</code> 中点击候选、直接拖拽、选择框、点击提交、离开收尾和双击分发统一收口到
+    <code>pointer-interaction.ts</code>；工具行为只保留生命周期与事件路由，文件由 459 行缩减为 58 行。
+    两项职责各自集中在一个完整控制器中，继续复用既有选择框和图形拖拽模块，没有新增薄转发链；架构守卫阻止视口计算和指针交互重新内联宿主。
+    两个迁移候选均未被 <code>src/views/icce/logic</code> 引用，逻辑图、详情页、结构树抽屉、协作协议、组件模板和样式保持不动。
+    类型检查、差异检查、ICCE 全量 97 个测试文件共 390 条 Vitest 用例和生产构建均通过。
+  </p>
+  <p>
+    <strong>七-三执行结果（2026 年 7 月 17 日）：</strong>审计确认图形富文本编辑、只读画布布局与路径文字编辑分别强耦合
+    Quill 生命周期、DOM 测量、Konva 坐标和可见性状态，继续拆分只会产生依赖参数过多的薄封装，因此三个编辑与渲染组件保持原位。
+    <code>ShapeRenderer.vue</code> 中矩形、椭圆、菱形、图片与富文本区域的纯 Konva 配置统一收口到
+    <code>shape-render-config.ts</code>；富文本内容回写、选择切换、标签高亮、条件编辑和事件通知统一收口到
+    <code>use-shape-rich-text-interaction.ts</code>。渲染器只保留图片资源、配置装配、富文本组件绑定及防止文字溢出撑大选区的分组边界处理，
+    文件由 443 行缩减为 146 行。两个新模块分别为 131 行和 197 行，没有继续拆散渲染热路径或形成薄转发链；新增纯配置测试与职责回流守卫。
+    候选文件均未被 <code>src/views/icce/logic</code> 引用，逻辑图、详情页、结构树抽屉、组件模板与样式保持不动。
+    类型检查、差异检查、ICCE 全量 98 个测试文件共 394 条 Vitest 用例和生产构建均通过。
+  </p>
+  <p>
+    <strong>七-四最终验收结果（2026 年 7 月 17 日）：</strong>统一复核阶段七新增的选区覆盖层、连线、视口手势、指针、
+    图形渲染配置与富文本交互会话，确认全部生产模块均有真实调用方，没有旧路径回流、逻辑图越界或可合并的薄封装；既有职责守卫均命中真实文件。
+    补充富文本交互会话行为测试，覆盖编辑结果通过应用变更入口回写且保留原图形数据，以及标签点击后的选择、高亮和事件通知链路；
+    测试通过显式模拟隔离无关路由与键盘依赖，不以不存在的目标形成虚假通过。本批未修改生产代码、详情页、结构树、逻辑图、组件模板或样式。
+    最终类型检查、旧路径审计、差异检查、ICCE 全量 99 个测试文件共 396 条 Vitest 用例和生产构建均通过，阶段七按当前范围完成。
+  </p>
+  <div class="decision">
+    <strong>阶段七完成结论：</strong>主画布的选区覆盖层、连线工具、舞台视口、指针工具和图形渲染器已按稳定职责拆分；
+    富文本编辑、只读画布测量和路径文字编辑因强耦合保持原位。后续不得把本阶段继续解释为按行数拆分组件的开放队列；
+    新的重构方向需要重新基于实际依赖、业务收益和独立验收条件立项。
+  </div>
+  <div class="warning">
+    <strong>阶段七排除项：</strong>不重构 <code>icce-detail.vue</code>；不调整 <code>TreeBottomDrawer.vue</code> 布局、展开收起或尺寸调整；
+    不迁移任何被 <code>src/views/icce/logic</code> 引用的文件；不升级协作协议；不把渲染热路径拆成大量薄封装。
+  </div>
+
+  <h2>二十一、阶段八画布剩余职责清算计划</h2>
+  <p>
+    阶段七完成后重新盘点 <code>src/views/icce/canvas</code>：当前仍有 46 个 TypeScript/Vue 生产文件，其中
+    <code>utils</code> 29 个、<code>constants</code> 7 个、<code>debug</code> 4 个、<code>commands</code> 2 个、
+    <code>types</code> 2 个、<code>core</code> 2 个。数量本身不是问题，但现有目录同时包含纯 Konva 运行时、UI 命令、
+    Vue 注入契约、交互会话类型、调试宿主、Store 查询和无消费者遗留实现，不能继续统一解释为“画布底层能力”。
+    当前 <code>src/views/icce/logic</code> 对这些文件没有入向引用，因此本阶段不受逻辑图共享文件保留规则阻塞。
+  </p>
+  <div class="decision">
+    <strong>阶段八目标：</strong>根级 <code>canvas</code> 是启动时形成的混合遗留目录，不在理想目录中，最终应完整退场。
+    其中 Konva 节点解析、图形与连线渲染计算、连接点命中、绘制预览、舞台尺寸换算、覆盖层定位、富文本只读布局、边界与轮廓计算及其渲染常量，
+    应按真实消费者分别归入 <code>ui/canvas</code>、<code>ui/tools</code>、<code>ui/viewport</code> 和 <code>ui/components</code>；无消费者文件直接删除，不建立兼容转发。
+  </div>
+  <table>
+    <thead><tr><th>批次</th><th>执行内容</th><th>主要候选</th><th>完成标准</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>八-零</td>
+        <td>冻结剩余文件与入向依赖基线</td>
+        <td>按运行时、UI/状态、调试、混合依赖和无消费者五类记录 46 个文件，并逐项检查逻辑图引用。</td>
+        <td>明确保留边界、迁移队列和删除候选；被逻辑图引用的文件继续排除。</td>
+        <td>已完成规划基线</td>
+      </tr>
+      <tr>
+        <td>八-一</td>
+        <td>合并删除无消费者实现并迁移 UI、状态与调试职责</td>
+        <td>删除力导向实验、无消费者权限类型、限制常量和调试清单；整体迁移命令、交互会话、快捷新增、文本编辑、富文本注册、工具栏元数据、全局界面副作用和事件检查能力。</td>
+        <td>无消费者文件不留兼容转发；界面职责归入 <code>ui</code> 与 <code>debug</code>；全部调用方直连新真实路径并由架构守卫防回流。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>八-二</td>
+        <td>拆解伪核心与混合工具</td>
+        <td><code>core/relation-access.ts</code> 的关系 Store 查询，以及 <code>utils/shape-property.ts</code> 中混合的纯属性解析与仓库读取。</td>
+        <td>父关系、范围判断和区域名称统一由领域查询提供，基础设施组合根仅负责装配图形与关系仓库；领域和 UI 消费者不再依赖混合或兼容入口。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>八-三</td>
+        <td>归位剩余画布运行时并最终验收</td>
+        <td>剩余常量、几何、渲染、命中、预览、坐标和只读布局文件，以及对应测试与架构守卫。</td>
+        <td>根级 <code>canvas</code> 不再保留生产文件、测试或旧路径导入；类型检查、ICCE 全量 Vitest、生产构建和差异检查通过。</td>
+        <td>已完成（仓库类型检查受既有非 ICCE 错误阻断）</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <strong>八-一删除准入：</strong>“搜索不到普通导入”只作为候选证据，删除前还必须检查测试引用、动态导入、入口副作用和构建产物。
+    全局界面副作用仍由全局入口以原有时机加载，只改变真实归属，不改变启动行为。
+    调试事件主目录仍被开发态检查器使用，只删除无消费者的汇总库存和仅服务该库存的组件事件清单，不删除有效调试能力。
+  </p>
+  <p>
+    <strong>执行与验收策略：</strong>八-一已合并完成零行为删除和 UI/状态/调试职责迁移；八-二已完成伪核心与混合查询拆解；
+    八-三统一归位测试和守卫。批次中间只运行类型检查和相关 Vitest，整个阶段结束后执行一次 ICCE 全量测试与生产构建，避免恢复为逐文件完整验收。
+  </p>
+  <div class="note">
+    <strong>八-一执行结果（2026 年 7 月 17 日）：</strong>已删除 12 个无消费者生产文件，迁出 11 个界面、状态与调试文件，并将原混合常量入口拆为舞台注入契约、浮层常量和交互内部常量。<code>canvas</code> 生产文件由 46 个降至 22 个，全局副作用加载时机和有效调试能力保持不变，旧路径不保留兼容转发。架构守卫已固定删除清单、新真实路径和旧导入禁止规则；ICCE 全量 99 个测试文件共 398 条 Vitest 用例通过。仓库类型检查仍被既有非 ICCE 页面的模板语法错误阻断，本批未修改该页面；生产构建按批次策略留待阶段八终验收。
+  </div>
+  <div class="note">
+    <strong>八-二执行结果（2026 年 7 月 17 日）：</strong>图形绑定节点与负责人解析已归入领域查询，父关系、范围判断和区域展示名已收敛到统一领域查询，基础设施组合根集中装配图形与关系仓库。原图形查询兼容适配器与两个薄查询适配器已删除，UI 统一按图形标识调用查询对象。纯渲染样式解析保留在 <code>canvas</code> 运行时，重复的图形属性变更实现和仅剩测试消费的关系工具已删除，旧路径均不保留转发。<code>canvas</code> 生产文件降至 21 个，已无基础设施、UI、调试、Vue 或 Pinia 反向依赖；ICCE 全量 100 个测试文件共 394 条 Vitest 用例通过。仓库类型检查仍被既有非 ICCE 页面模板语法错误阻断，生产构建留待八-三终验收。
+  </div>
+  <div class="note">
+    <strong>八-三执行结果（2026 年 7 月 17 日）：</strong>首次验收错误地将 21 个纯运行时文件冻结在根级 <code>canvas</code>，与理想目录不包含该遗留层的目标冲突，现已纠正。节点与拖放能力归入 <code>ui/canvas</code>，连接命中和绘制预览归入 <code>ui/tools</code>，视口常量与尺寸换算归入 <code>ui/viewport</code>，图形、连线、富文本、轮廓及快捷新增渲染能力归入 <code>ui/components</code>；无生产消费者的连线连接工具已删除。随后按共同消费关系继续内聚：节点标识与命中解析、图形样式常量与解析、视口常量与尺寸换算分别合并为单一入口；快捷新增由四个文件收敛为契约策略与布局候选两个文件；单调用方的未绑定节点查询回收到画布顶部组件。这组相关实现由 21 个文件收敛为 15 个，不建立桶导出或兼容转发。根级 <code>canvas</code> 现无生产文件、测试或旧路径导入，由架构守卫固定退场状态。ICCE 全量 100 个测试文件共 394 条 Vitest 用例通过，生产构建成功，差异检查通过。生产构建仅保留仓库既有的组件重名、外部页面动态求值和大分块提示；仓库类型检查仍在 <code>src/views/setting/field/index.vue</code> 的既有模板语法错误处提前失败，本阶段未越界修改该非 ICCE 页面。
+  </div>
+  <div class="warning">
+    <strong>阶段八排除项：</strong>不重构 <code>icce-detail.vue</code> 或根级页面 Store；不调整 <code>TreeBottomDrawer.vue</code>；
+    不迁移任何新发现被 <code>src/views/icce/logic</code> 引用的文件；不修改协作协议、富文本编辑行为或画布业务规则；
+    快捷新增与工具栏宿主的行为拆分顺延到后续重新评估，不自动视为阶段九已授权任务。
+  </div>
+
+  <h2>二十二、条件性方向与阶段五执行记录</h2>
+  <div class="warning">
+    以下能力不属于无条件重构：协作协议升级只在需要跨端幂等、冲突处理、离线合并或操作审计时启动；历史记录与撤销重做只在出现明确产品需求时启动；独立逻辑图只在确认恢复业务后规划并轨，短期仅处理生产包隔离。不得为了架构形式提前新增历史仓库、操作记录器、事务编号或命令式协作协议。
+  </div>
+  <div class="decision">
+    阶段五定义为“分层依赖与生产构建边界收口”，以下保留其执行记录。阶段五只完成当时约定的六个批次，不再承担“达到全部理想目录”的含义；复核后新增的实质差异统一进入阶段六。
+  </div>
+  <table>
+    <thead><tr><th>批次</th><th>执行内容</th><th>主要范围</th><th>完成标准</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>五-一</td><td>冻结依赖与构建基线</td><td>类型检查、全量 Vitest、生产构建日志、领域与应用导入清单、调试资源产物清单。</td><td>形成可重复的基线和范围清单；架构守卫随对应边界批次落地，本批次不改变生产行为。</td><td>已完成</td></tr>
+      <tr><td>五-二</td><td>清理桶导出循环依赖</td><td><code>canvas/store</code>、<code>canvas/commands</code> 及其内部调用方。</td><td>目录内部使用直接文件导入，生产构建不再报告 ICCE 工具仓库与工具栏命令的跨分块循环依赖。</td><td>已完成</td></tr>
+      <tr><td>五-三</td><td>建立开发态调试宿主并收紧权限调试</td><td><code>icce-detail.vue</code>、权限与校验模拟器、事件检查器、调试详情面板及权限调试开关。</td><td>详情页只动态引用统一调试宿主；正式生产构建裁剪权限模拟器、校验模拟器和事件检查器，并在读取本地存储前拒绝权限绕过。</td><td>已完成</td></tr>
+      <tr><td>五-四</td><td>归位领域模型与稳定规则</td><td>图形、连线、关系、图类型、变更计划类型，以及被领域服务依赖的纯几何和关系规则。</td><td><code>domain</code> 不再导入 <code>canvas/store</code>、<code>canvas/core</code> 或表现层工具；规则测试与业务结果保持一致。</td><td>已完成</td></tr>
+      <tr><td>五-五</td><td>建立应用端口和装配入口</td><td>Mutation Runtime 契约、画布查询、事务执行、应用门面和具体基础设施实现。</td><td>应用命令依赖应用层端口，独立装配入口连接仓库与 Runtime；应用层不直接调用 <code>canvas/commands</code> 或读取具体仓库。</td><td>已完成</td></tr>
+      <tr><td>五-六</td><td>清理薄封装并归类状态</td><td>查询、高亮、视口控制器及核心、界面状态仓库。</td><td>删除纯转发壳，保留有稳定职责的适配器和控制器；状态迁移带来实际依赖减少，并由架构守卫固定新边界。</td><td>已完成</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>五-二执行结果（2026 年 7 月 16 日）：</strong>ICCE 内部对仓库与命令桶入口的引用已全部切换到具体文件，交叉导出的基础设施状态改为直接引用其真实归属；无模块外消费者的两个桶文件已删除，并由架构测试阻止桶文件和目录导入回流。差异检查、类型检查、84 个测试文件共 312 条 Vitest 用例和生产构建均已通过，原生产构建中的 ICCE 工具仓库与工具栏命令跨分块循环依赖警告已消失。
+  </div>
+  <div class="note">
+    <strong>五-三执行结果（2026 年 7 月 16 日）：</strong><code>icce-debug-host.vue</code> 已集中装配权限模拟器、校验模拟器、事件检查器和调试详情面板，详情页通过可静态裁剪的动态组件加载该宿主。三个可视面板统一由页面左下角的“权限 / 校验 / 画布”工具条切换，再次点击当前按钮即可关闭；权限与校验模拟器的独立环境开关、权限面板控制台全局变量以及画布详情面板的查询参数和本地存储显示入口不再参与面板开关。开发模式默认允许调试；非开发构建只有显式设置 <code>VITE_ICCE_DEBUG_BUILD=1</code> 后，<code>VITE_DFD_PERMISSION_DEBUG</code> 或浏览器本地存储才可开启权限绕过。正式生产构建已裁剪权限模拟器、校验模拟器和事件检查器，主详情脚本由约 936.8 kB 降至约 907.6 kB。差异检查、类型检查、85 个测试文件共 315 条 Vitest 用例和生产构建均已通过。
+  </div>
+  <div class="note">
+    <strong>五-四执行结果（2026 年 7 月 16 日）：</strong>图形、连线、关系、图类型和变更计划契约已归入 <code>domain/model</code>；图类型策略、关系策略、区域约束、富文本解析、只读查询、属性变更和连线路由等稳定规则已归入 <code>domain/rules</code>、<code>domain/queries</code> 与 <code>domain/services</code>。原 <code>canvas/types</code>、<code>canvas/diagram-rules</code> 和相关 <code>canvas/utils</code> 路径保留单向兼容转发，避免一次性改动全部界面调用方。<code>DiagramQuery</code> 的父关系读取改为由数据源显式注入，不再隐式访问 Pinia；架构守卫新增领域层禁止依赖 <code>canvas</code>、Vue 和 Pinia 的约束。差异检查、ICCE 全量 86 个测试文件共 317 条 Vitest 用例和生产构建均已通过。仓库级 <code>vue-tsc</code> 仍受既有非 ICCE 模板语法及 TypeScript 配置兼容问题阻塞，本批未修改对应文件。
+  </div>
+  <div class="note">
+    <strong>五-五执行结果（2026 年 7 月 16 日）：</strong><code>CanvasMutationRuntime</code> 已从基础设施实现文件迁入 <code>application/ports</code>，画布变更、选择与快照契约归入 <code>application/contracts</code>；应用命令全部改为依赖应用端口和领域模型。<code>canvas-mutation-facade.ts</code> 已成为纯应用工厂，不再创建 Runtime、读取 Pinia 或调用基础设施事务；新增 <code>infrastructure/composition/canvas-mutation.ts</code> 作为唯一组合根，集中装配具体仓库、校验、事务和 Runtime。用户交互权限由 UI 入口消费 <code>permissions/</code> 中的判断结果，不进入应用命令和组合根。原位于 <code>canvas/commands</code> 的区域扩展、关联内容移动、批量连线同步和图形写入执行器迁入 <code>application/execution</code>，旧文件直接删除；删除计划的父关系查询改为显式注入，不再隐式读取关系 Store。架构守卫新增应用层禁止依赖 <code>canvas</code>、<code>infrastructure</code> 以及组合根唯一性的约束。
+  </div>
+  <div class="note">
+    <strong>五-六执行结果（2026 年 7 月 16 日）：</strong>五-四保留的 <code>canvas/types</code>、<code>canvas/diagram-rules</code> 及八个 <code>canvas/utils</code> 单行兼容入口已迁移全部消费者后删除。<code>canvas-query-controller.ts</code> 迁为 <code>infrastructure/adapters/diagram-query-adapter.ts</code>，<code>highlight-controller.ts</code> 删除并由消费者直接使用高亮状态；视口控制器和 Konva 视口状态归入 <code>ui/state</code>，视口适配计算拆为纯规划模块并补充单测。<code>canvas/store</code> 全部退场：图形、关系和图类型会话状态归基础设施，工具、视口、高亮、交互、预览、连接点、弹窗和分栏状态归 UI；画布性能追踪能力迁入基础设施调试目录继续保留。新增守卫阻止旧兼容入口、旧控制器、旧仓库路径、基础设施反向依赖 UI 及基础设施仓库依赖画布目录回流。差异检查、ICCE 全量 87 个测试文件共 323 条 Vitest 用例和生产构建均已通过。仓库级 <code>vue-tsc</code> 仍受既有非 ICCE 模板语法及 TypeScript 配置兼容问题阻塞，本批未修改对应文件。
+  </div>
+  <table>
+    <thead><tr><th>环境</th><th>调试宿主</th><th>权限调试环境变量</th><th>权限调试本地存储</th></tr></thead>
+    <tbody>
+      <tr><td>开发模式</td><td>允许动态加载</td><td>允许生效</td><td>允许生效</td></tr>
+      <tr><td>显式调试构建</td><td><code>VITE_ICCE_DEBUG_BUILD=1</code> 时允许动态加载</td><td>允许生效</td><td>允许生效</td></tr>
+      <tr><td>正式生产构建</td><td>不加载</td><td>单独设置权限变量无效</td><td>忽略且禁止写入</td></tr>
+    </tbody>
+  </table>
+  <p><strong>五-三限定范围：</strong>按当前决策不调整 <code>/icce-demo</code> 路由、不改变逻辑图加载方式、不新增构建守卫。因此生产构建仍可因调试示例路由生成 <code>icce-demo</code> 及调试详情相关资源，此结果不属于本批失败；画布性能追踪等生产诊断能力保持原样。</p>
+  <p><strong>阶段五进入条件：</strong>阶段四提交已落地，工作区基线干净，现有类型检查、ICCE 全量 Vitest 与生产构建能够复现。</p>
+  <p><strong>阶段五明确不做：</strong>不新增业务用例，不改变正常权限结果和图数据格式，不升级协作协议，不建设历史记录或撤销重做，不将独立逻辑图整体并入主画布，不以统一目录为由进行无依赖收益的批量搬迁；调试路由、逻辑图静态入口和构建产物守卫按当前决策不再纳入本阶段。</p>
+  <p><strong>阶段五停止条件：</strong>领域和应用层物理依赖符合目标方向；生产详情页不再静态装配调试工具且权限调试具备生产环境硬边界；ICCE 循环分块警告清除；无价值薄封装退场；架构守卫、类型检查、全量 Vitest 和生产构建全部通过。达到条件后停止，不继续自动扩展到条件性能力。</p>
+
+  <div class="warning">
+    以下“历史材料与迁移记录”用于追溯此前阶段，不得覆盖本页当前有效基线。若历史记录与本页冲突，以本页为准。
+  </div>
+</section>
+<details class="section" id="historical-records" style="max-width: 1180px; margin: 24px auto;">
+  <summary><strong>历史材料与迁移记录（非当前执行指令）</strong></summary>
+<div class="layout">
+<aside class="toc" aria-label="目录">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#overview">概览</a></li>
+    <li><a href="#quick-summary">30 秒速览</a></li>
+    <li><a href="#problems">当前问题</a></li>
+    <li><a href="#non-goals">非目标</a></li>
+    <li><a href="#architecture">目标架构</a>
+      <ol>
+        <li><a href="#architecture-tree">理想目录</a></li>
+        <li><a href="#dialog-best-practices">弹窗最佳实践目录</a></li>
+        <li><a href="#architecture-rules">规划说明</a></li>
+        <li><a href="#architecture-deps">依赖关系</a></li>
+        <li><a href="#permission-boundary">权限边界</a></li>
+      </ol>
+    </li>
+    <li><a href="#mapping">现有实现映射</a></li>
+    <li><a href="#services">领域服务拆分</a></li>
+    <li><a href="#usecases">应用层用例</a></li>
+    <li><a href="#command-rules">命令规范</a>
+      <ol>
+        <li><a href="#facade-criteria">门面判据</a></li>
+      </ol>
+    </li>
+    <li><a href="#migration">迁移策略</a>
+      <ol>
+        <li><a href="#migration-path">阶段图</a></li>
+        <li><a href="#stop-conditions">停止条件</a></li>
+        <li><a href="#anti-patterns">反模式清单</a></li>
+        <li><a href="#phase-critical-cases">阶段关键用例</a></li>
+        <li><a href="#controller-order">控制器拆分</a></li>
+        <li><a href="#utils-order">工具拆分</a></li>
+        <li><a href="#migration-checklist">执行清单</a></li>
+      </ol>
+    </li>
+    <li><a href="#principles">重构原则</a></li>
+    <li><a href="#schedule">落地顺序</a></li>
+    <li><a href="#phase4-plan">阶段四执行计划</a></li>
+    <li><a href="#conclusion">结论</a></li>
+    <li><a href="#appendix-v02">附录：v0.2 评审补丁</a>
+      <ol>
+        <li><a href="#appendix-rules-services">规则与服务边界</a></li>
+        <li><a href="#appendix-collab">协作链路硬约束</a></li>
+        <li><a href="#appendix-history">事务与历史存储关系</a></li>
+        <li><a href="#appendix-command-contract">命令签名规范</a></li>
+        <li><a href="#appendix-phase3-tests">阶段三单测清单</a></li>
+        <li><a href="#appendix-stage1-extras">阶段一执行清单补充</a></li>
+      </ol>
+    </li>
+    <li><a href="#appendix-v03">附录：v0.3 评审补丁</a>
+      <ol>
+        <li><a href="#appendix-validation-scope">验证规则归位范围</a></li>
+        <li><a href="#appendix-validation-split">验证规则与服务拆分</a></li>
+        <li><a href="#appendix-validation-cmd">验证用例与命令衔接</a></li>
+        <li><a href="#appendix-validation-migration">验证模块迁移清单</a></li>
+        <li><a href="#appendix-validation-tests">验证相关单测补充</a></li>
+      </ol>
+    </li>
+  </ol>
+</aside>
+<main>
+  <h1>ICCE 功能架构重构方案</h1>
+  <div class="meta">
+    <span>状态：方案评审中</span>
+    <span>目标：向最佳实践渐进收敛</span>
+    <span>范围：<code>src/views/icce</code></span>
+    <span>版本：v0.3（v0.2、v0.3 评审补丁）</span>
+  </div>
+  <h2 id="quick-summary">30 秒速览</h2>
+  <div class="section">
+    <table>
+      <thead>
+      <tr>
+        <th>看什么</th>
+        <th>一句话</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>目标</td>
+        <td>把 ICCE 收敛成应用层、领域层、基础设施层和 UI 层分明的结构。</td>
+      </tr>
+      <tr>
+        <td>当前策略</td>
+        <td>不推倒重来，先抽边界，再拆规则，最后统一目录和入口。</td>
+      </tr>
+      <tr>
+        <td>优先动作</td>
+        <td>隔离调试入口，收口命令，沉淀领域服务，补关键单测，补齐验证规则归位。</td>
+      </tr>
+      <tr>
+        <td>门面态度</td>
+        <td>默认不引入额外门面，只有在多入口复用和稳定契约明确时才补。</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section" id="overview">
+    <p>本方案不追求一次性推倒重来，而是以现有实现为起点，逐步收敛为稳定的功能架构。分层原则是：应用层承接用例，领域层沉淀规则，基础设施层对接状态与协作，UI 层只做交互编排。</p>
+    <div class="flow">
+      <div class="box primary">UI / 工具 / 命令</div>
+      <div class="arrow">→</div>
+      <div class="box">应用层用例</div>
+      <div class="arrow">→</div>
+      <div class="box">领域服务</div>
+      <div class="arrow">→</div>
+      <div class="box green">状态 / 事件 / 协作</div>
+    </div>
+    <div class="decision">
+      设计决策：当前仅为迁移需要暂时保留 <code>CanvasController</code>；阶段四必须拆分其查询、变更编排、事务边界、事件同步和恢复职责，最终必须移除该控制器，不保留兼容入口、组合根或应用门面形态。
+    </div>
+    <div class="note">
+      术语说明：文档中保留的英文主要包括代码名、目录名和通用技术缩写，如 <code>UI</code>、<code>Vue</code>、<code>Konva</code>、<code>Pinia</code>。正文描述优先使用中文。
+    </div>
+    <h3>阅读顺序</h3>
+    <ol>
+      <li>先看“目标架构”，确认理想目录、分层职责和权限边界。</li>
+      <li>再看“现有实现映射”，把当前文件和目标目录对齐。</li>
+      <li>接着看“领域服务拆分”和“应用层用例”，理解规则和意图分别放在哪。</li>
+      <li>然后看“命令规范”“事务层”“权限边界”，确认执行、提交和判定怎么串起来。</li>
+      <li>最后看“迁移策略”“落地顺序”和“结论”，按阶段推进收敛。</li>
+    </ol>
+  </div>
+
+  <h2 id="problems">1. 重构启动时问题</h2>
+  <div class="section">
+    <ul>
+      <li><code>canvas-controller.ts</code> 同时承担图形、连线、关系、区域、快照、事件等职责，领域边界不清晰。</li>
+      <li><code>useStageEvents.ts</code> 和原 <code>useCollabSync.ts</code> 混合了编排、适配和部分业务规则。</li>
+      <li>调试页、示例页和生产页混用，导致构建边界不干净。</li>
+      <li>部分规则散落在工具层、组件层和控制器层，后续扩展成本持续上升。</li>
+    </ul>
+    <div class="warning">
+      这些问题不意味着当前实现不可用，而是说明系统已经进入需要系统性收敛的阶段。重构目标应当是稳定迁移，而不是简单重写。
+    </div>
+  </div>
+
+  <h2 id="non-goals">1.1 非目标</h2>
+  <div class="section">
+    <ul>
+      <li>不重写现有业务功能，不改变现有功能语义。</li>
+      <li>不在同一轮迁移中同时引入新的交互模式或新的图形模型。</li>
+      <li>不做跨技术栈切换，仍以现有前端技术和协作链路为基础。</li>
+      <li>不追求一次性目录搬迁完成，先保证边界清晰，再调整物理结构。</li>
+    </ul>
+  </div>
+
+  <h2 id="architecture">2. 目标架构</h2>
+  <div class="section">
+    <h3 id="architecture-tree">理想目录</h3>
+    <pre><code>icce/
+├── app/                                  # 页面入口与装配
+│   ├── icce-detail.page.vue
+│   ├── icce-demo.page.vue
+│   └── index.page.vue
+├── application/                           # 用例层、提交层、命令层
+│   ├── commands/
+│   │   ├── create-shape.command.ts
+│   │   ├── move-selection.command.ts
+│   │   ├── delete-selection.command.ts
+│   │   ├── connect-line.command.ts
+│   │   ├── set-containment.command.ts
+│   │   └── hydrate-diagram.command.ts
+│   ├── permissions/
+│   │   ├── policy.ts
+│   │   └── debug.ts
+│   ├── facade/                           # 可选薄壳，仅在复合提交或横切装饰时使用
+│   │   └── diagram.facade.ts
+│   ├── transaction/                       # 预留：操作提交、记录、回放与元数据
+│   │   ├── operation-recorder.ts
+│   │   ├── replay-applier.ts
+│   │   └── mutation-meta.ts
+│   └── events/
+│       └── operation-events.ts
+├── domain/                                # 领域模型、规则、服务、查询
+│   ├── model/
+│   │   ├── shape.ts                        # 领域实体、值对象、状态结构，不只是类型声明
+│   │   ├── line.ts
+│   │   ├── relation.ts
+│   │   └── diagram.ts
+│   ├── services/
+│   │   ├── containment.service.ts
+│   │   ├── line-routing.service.ts
+│   │   ├── region-layout.service.ts
+│   │   ├── selection.service.ts
+│   │   ├── hydration.service.ts
+│   │   └── diagram-policy.service.ts
+│   ├── queries/
+│   │   ├── diagram-query.ts
+│   │   ├── shape-query.ts
+│   │   └── line-query.ts
+│   └── rules/
+│       ├── containment-rules.ts
+│       └── diagram-rules.ts
+├── infrastructure/                        # store、事件、协作、回放、适配器
+│   ├── stores/
+│   │   ├── shapes-store.ts
+│   │   ├── relation-store.ts
+│   │   ├── selection-store.ts
+│   │   ├── viewport-store.ts
+│   │   ├── tool-store.ts
+│   │   ├── preview-store.ts
+│   │   ├── interaction-store.ts
+│   │   └── remote-cursor-store.ts
+│   ├── event-bus/
+│   │   ├── event-bus.ts
+│   │   ├── canvas-events.ts
+│   │   └── icce-events.ts
+│   ├── collab/
+│   │   ├── drag-message-codec.ts
+│   │   ├── drag-message-dispatcher.ts
+│   │   ├── ws-collab-transport.ts
+│   │   ├── canvas-replay-applier.ts
+│   │   └── remote-cursor-message.ts
+│   ├── undo-redo/                         # 预留：有实际历史需求时再落地
+│   │   └── history-store.ts
+│   └── adapters/
+│       ├── viewport-adapter.ts
+│       ├── konva-adapter.ts
+│       └── remote-cursor/
+│           └── cursor-canvas-adapter.ts
+├── ui/                                    # 交互编排、工具、组件、浮层
+│   ├── collab/
+│   │   ├── useCollabSync.ts
+│   │   └── useRemoteCursor.ts
+│   ├── stage/
+│   │   ├── useStageEvents.ts
+│   │   ├── useKeyboardShortcuts.ts
+│   │   └── useDragCreate.ts
+│   ├── tools/
+│   │   ├── tool-registry.ts
+│   │   ├── tool-context.ts
+│   │   ├── behaviors/
+│   │   ├── pointer/
+│   │   ├── selection/
+│   │   └── resize/
+│   ├── components/
+│   │   ├── canvas/
+│   │   ├── layers/
+│   │   ├── shapes/
+│   │   └── overlays/
+│   ├── dialog/                            # 弹窗、抽屉与对话业务模块
+│   │   ├── features/
+│   │   │   ├── approval/
+│   │   │   ├── condition-editor/
+│   │   │   ├── data-dict/
+│   │   │   ├── template/
+│   │   │   └── region/
+│   │   ├── tree/                           # 结构树侧栏与抽屉
+│   │   ├── shared/                         # 通用弹窗壳与异步会话
+│   │   └── bridge/                         # 弹窗到画布的适配桥
+│   └── state/
+│       └── highlight.service.ts
+├── debug/                                 # 调试与示例
+│   ├── canvas/
+│   ├── examples/
+│   ├── permission-simulator.vue
+│   ├── validation-simulator.vue
+│   └── icce-detail.debug.vue
+└── docs/                                  # 设计与迁移文档
+    ├── ICCE功能架构重构方案.html
+    ├── dfd-issues-todo.html               # 已知问题展示，不作为架构依据
+    └── dfd-issues-data.js                 # 已知问题数据</code></pre>
+    <table>
+      <thead>
+      <tr>
+        <th>层级</th>
+        <th>职责</th>
+        <th>禁止事项</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>Application</td>
+        <td>按用户意图组织用例，负责事务、顺序、事件和协作打包</td>
+        <td>不放具体几何算法，不直接承载 UI 状态</td>
+      </tr>
+      <tr>
+        <td>Domain</td>
+        <td>承载图形、连线、关系、区域、选择、 hydration 等稳定规则</td>
+        <td>不依赖 Vue、Pinia、Konva 和 WebSocket</td>
+      </tr>
+      <tr>
+        <td>Infrastructure</td>
+        <td>承接状态存储、事件总线、协作同步、回放与外部协议</td>
+        <td>不参与领域判断，不自行补规则</td>
+      </tr>
+      <tr>
+        <td>UI</td>
+        <td>渲染、交互路由、工具行为、浮层定位、快捷键编排</td>
+        <td>不直接改核心领域数据，不绕过用例层</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这张目录树是重构目标参照，不要求一次性落地；迁移期间可以保留旧目录与旧导出，只要最终归位到这里即可。
+    </div>
+    <div class="decision">
+      事件总线已归位到 <code>infrastructure/event-bus/</code>：<code>event-bus.ts</code> 只创建并导出强类型
+      <code>icceEventBus</code> 单例，<code>canvas-events.ts</code> 与 <code>icce-events.ts</code> 分别维护画布事件和页面事件协议。
+      调用方必须直接从基础设施目录导入，不再通过 <code>canvas/constants/</code> 或旧工具目录转导。
+    </div>
+    <h3 id="dialog-best-practices">弹窗最佳实践目录</h3>
+    <p>弹窗属于 <code>ui/dialog/</code>，但不应按“所有弹窗组件”平铺组织。目录按业务功能分组，功能目录内部再区分展示组件、弹窗会话和类型；接口请求留在接口层，画布变更通过应用命令或适配桥完成。</p>
+    <pre><code>ui/dialog/
+├── features/
+│   ├── approval/
+│   │   └── ApprovalDialog.vue
+│   ├── condition-editor/
+│   │   ├── ConditionEditorDialog.vue
+│   │   └── useConditionEditorSession.ts
+│   ├── data-dict/
+│   │   ├── DataDictListDialog.vue
+│   │   ├── DataDictFormDialog.vue
+│   │   ├── DataDictDetailDialog.vue
+│   │   ├── data-dict-form.ts
+│   │   └── data-dict-list-session.ts
+│   ├── template/
+│   │   ├── TemplateListDialog.vue
+│   │   ├── TemplateApplyDialog.vue
+│   │   └── template-dialog-model.ts
+│   └── region/
+│       └── RegionDialog.vue
+├── tree/
+│   ├── TreeLeftDrawer.vue
+│   ├── TreeBottomDrawer.vue
+│   ├── useIcceTreeSource.ts
+│   ├── useTreeSelectionSync.ts
+│   └── tree-utils.ts
+├── shared/
+│   ├── DialogShell.vue
+│   ├── DialogFooter.vue
+│   ├── DraggableDialog.vue
+│   ├── useAsyncDialog.ts
+│   └── types.ts
+└── bridge/
+    └── useCanvasDialogBridge.ts</code></pre>
+    <table>
+      <thead>
+      <tr>
+        <th>目录或层</th>
+        <th>职责</th>
+        <th>禁止事项</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>features/*/*.vue</code></td>
+        <td>展示表单、列表、弹窗布局和用户事件</td>
+        <td>不直接编排复杂接口流程、画布规则或跨模块事件</td>
+      </tr>
+      <tr>
+        <td><code>features/*/use*.ts</code></td>
+        <td>弹窗打开关闭、表单会话、提交状态和业务流程编排</td>
+        <td>不承载大段模板结构和组件样式</td>
+      </tr>
+      <tr>
+        <td><code>shared/</code></td>
+        <td>通用弹窗壳、页脚、异步提交、防重复提交和基础类型</td>
+        <td>不放具体业务规则和某个功能的接口调用</td>
+      </tr>
+      <tr>
+        <td><code>bridge/</code></td>
+        <td>把弹窗意图转换为画布查询、选择、聚焦或命令调用</td>
+        <td>不让弹窗绕过应用命令直接修改核心领域状态</td>
+      </tr>
+      <tr>
+        <td><code>tree/</code></td>
+        <td>结构树抽屉、树节点查询、树与画布选中态同步</td>
+        <td>不与普通业务弹窗共享无关的表单提交逻辑</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="decision">
+      弹窗推荐的数据流为：<code>Dialog.vue → useFeatureDialog → application command / dialog service → API、store 或 canvas bridge → 返回结果 → 更新弹窗状态</code>。组件只负责展示和触发意图；接口协议归接口层，图形与区域变更归应用命令，画布适配集中在 <code>bridge/</code>。
+    </div>
+    <div class="note">
+      当前 <code>src/views/icce/dialog/</code> 可作为过渡目录保留。阶段六第五批先在原路径附近提取模型、字段配置和业务会话，
+      第六批再按稳定 feature 边界迁入 <code>features/</code>、<code>tree/</code> 与 <code>shared/</code>。
+      不按列表、表单、详情建立跨业务顶层目录，也不要一次性改变目录、接口和交互行为。
+    </div>
+    <h3>Store 写入责任</h3>
+    <p><code>infrastructure/stores/</code> 负责真正的状态读写，但“谁来触发最后一层写入”应收口在 <code>application</code> 层，而不是让 UI、工具或领域服务直接碰 store。</p>
+    <div class="flow">
+      <div class="box primary">UI / 工具</div>
+      <div class="arrow">→</div>
+      <div class="box">application/commands</div>
+      <div class="arrow">→</div>
+      <div class="box">application/transaction</div>
+      <div class="arrow">→</div>
+      <div class="box green">infrastructure/stores</div>
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>角色</th>
+        <th>职责</th>
+        <th>不能做什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>application/commands</code></td>
+        <td>决定这次变更是否发生，并组织领域服务与事务边界</td>
+        <td>不直接散落在组件里调用 store</td>
+      </tr>
+      <tr>
+        <td><code>application/transaction</code></td>
+        <td>统一提交、记录、回放和批次语义</td>
+        <td>不自己承载业务判断，也不直接替 UI 做交互</td>
+      </tr>
+      <tr>
+        <td><code>infrastructure/stores</code></td>
+        <td>执行最终写入和状态读写</td>
+        <td>不决定何时写、写什么、为什么写</td>
+      </tr>
+    </tbody>
+    </table>
+    <div class="note">
+      最佳实践是让 application 作为唯一的写入入口，store 只做落地执行。这样权限、事务、回放和协作语义才能保持统一。
+    </div>
+    <h3 id="architecture-rules">规划说明</h3>
+    <ul>
+      <li><code>app/</code> 只放页面入口与装配，不承载业务实现。这里的职责是把路由、页面骨架和全局能力接起来，尽量做到薄。</li>
+      <li><code>application/</code> 按用户意图组织，不按技术动作组织。比如“删除选中项”“恢复画布”“设置归属关系”是用例，“更新图形属性”只是实现细节。</li>
+      <li><code>application/commands/</code> 默认作为唯一对外执行入口；如果后续确有“多个命令必须作为一个提交单元”或“需要统一横切装饰”的需求，再补 <code>application/facade/</code>，且只能做组合、事务边界和横切收口，不能长成第二个控制器。</li>
+      <li><code>application/transaction/</code> 是后续事务记录和历史回放的预留位置，目前仅保留现有画布操作同步能力，不提前建设历史链路。临时预览态、拖拽中间态和高频鼠标反馈留在 <code>ui/</code>。</li>
+      <li><code>domain/</code> 是整个方案的核心沉淀区。凡是稳定、可测试、可复用、与框架无关的规则，都优先沉到这里。</li>
+      <li><code>domain/model/</code> 负责承载领域对象本身，包括实体、值对象、聚合状态、快照结构和少量与模型强相关的基础方法，不建议退化成纯类型声明仓库。</li>
+      <li><code>infrastructure/</code> 负责和外部世界接轨，包括状态存储、协作同步、事件总线、历史记录和适配器，不参与业务规则判断。</li>
+      <li><code>ui/</code> 只处理交互编排和视觉展示。Stage 事件路由、工具行为、浮层定位、选择高亮都在这里，但不直接改核心领域数据。</li>
+      <li><code>debug/</code> 与生产代码严格分离。调试页、示例页、实验页都放这里，构建时可以明确排除或仅在开发态引入。</li>
+      <li><code>docs/</code> 只放架构、迁移、规则说明和演进记录，避免设计讨论散落在业务目录里。</li>
+    </ul>
+    <h3>事务层职责</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>文件</th>
+        <th>职责</th>
+        <th>输入</th>
+        <th>输出</th>
+        <th>不能做什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>operation-recorder.ts</code></td>
+        <td>把一次已提交的变更记录成可追踪、可回放的操作条目</td>
+        <td>命令结果、变更前后状态、操作元数据</td>
+        <td>操作记录、变更批次、可回放载荷</td>
+        <td>不判断业务规则，不自己决定是否允许修改</td>
+      </tr>
+      <tr>
+        <td><code>replay-applier.ts</code></td>
+        <td>把记录好的操作按既定顺序重新应用到目标状态</td>
+        <td>操作记录、目标状态、回放策略</td>
+        <td>重放后的状态、补偿结果、跳过结果</td>
+        <td>不解释意图，不重新做领域校验，不承接 UI 交互</td>
+      </tr>
+      <tr>
+        <td><code>mutation-meta.ts</code></td>
+        <td>统一定义一次变更的上下文标签和追踪信息</td>
+        <td>动作类型、意图、阶段、用户、时间、操作标识</td>
+        <td>标准化的元数据对象</td>
+        <td>不存业务内容，不承载规则判断</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      事务层可以理解成“操作账本 + 回放机 + 统一标签”。它不负责决定怎么改，只负责把已经决定要改的内容稳定地记下来、放回去、串起来。
+    </div>
+    <div class="decision">
+      当前事务入口命名约定：<code>executeOperation</code> 是应用层操作入口，负责将 <code>CanvasMutationMeta</code> 归一化并把已解析元数据传入执行回调；<code>runCanvasTransaction</code> 是基础设施事务作用域，仅负责开始、合并和结束已解析的画布事务。两者职责不同，不视为重复实现。
+    </div>
+    <h3>事务协议</h3>
+    <p class="note">以下协议仅作为未来引入历史记录或命令式回放时的设计预案，当前实现不落地这些字段。</p>
+    <pre><code>type MutationMeta = {
+  operationId: string;
+  transactionId?: string;
+  action: 'add' | 'modify' | 'delete';
+  intent: 'create-shape' | 'move-selection' | 'delete-selection' | 'connect-line' | 'set-containment' | 'hydrate-diagram';
+  phase: 'preview' | 'commit' | 'replay';
+  timestamp: number;
+  userId?: string | null;
+  reason?: string;
+};</code></pre>
+    <ul>
+      <li><code>operationId</code> 串起同一次用户意图的多次变更，<code>transactionId</code> 标识一次实际提交边界。</li>
+      <li><code>action</code>、<code>intent</code>、<code>phase</code> 用来区分动作、意图和阶段，不要混用。</li>
+      <li><code>recording</code>、<code>replay</code> 和 <code>commit</code> 的职责分开，预览态不落账，提交态才进入事务层。</li>
+    </ul>
+    <p>事务层的使用方式可以概括为：命令生成元数据，记录器写入可回放变更，回放器恢复同一结果。</p>
+    <h3>层级关系</h3>
+    <div class="flow">
+      <div class="box primary">app</div>
+      <div class="arrow">→</div>
+      <div class="box">application</div>
+      <div class="arrow">→</div>
+      <div class="box">domain</div>
+      <div class="arrow">→</div>
+      <div class="box green">infrastructure</div>
+    </div>
+    <p>箭头表示主要依赖方向，不代表严格调用链。页面装配依赖应用层，用例依赖领域服务，领域服务可依赖查询和规则，但不反向依赖 UI 或框架；基础设施层只提供状态和外部接入，不驱动业务规则。</p>
+    <h3 id="architecture-deps">依赖关系图</h3>
+    <div class="flow">
+      <div class="box primary">ui</div>
+      <div class="arrow">→</div>
+      <div class="box">application</div>
+      <div class="arrow">→</div>
+      <div class="box">domain</div>
+      <div class="arrow">→</div>
+      <div class="box green">infrastructure</div>
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>来源层</th>
+        <th>可依赖目标</th>
+        <th>不能依赖</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>UI</td>
+        <td>application、domain 查询、infrastructure 的适配接口</td>
+        <td>具体 store 实现、协作协议细节、领域写入规则</td>
+        <td>UI 只负责事件路由和展示，不参与核心业务判断。</td>
+      </tr>
+      <tr>
+        <td>Application</td>
+        <td>domain 服务、infrastructure 的事务与事件能力、权限判定能力</td>
+        <td>具体组件、页面骨架、Konva 视图实现</td>
+        <td>应用层只组织用例，不承担渲染职责。</td>
+      </tr>
+      <tr>
+        <td>Domain</td>
+        <td>纯查询、纯规则、领域模型</td>
+        <td>Vue、Pinia、WebSocket、DOM、Konva</td>
+        <td>领域层必须尽量纯净，保证可测试和可复用。</td>
+      </tr>
+      <tr>
+        <td>Infrastructure</td>
+        <td>外部状态、事件总线、协作通道、回放适配</td>
+        <td>业务规则决策、领域不变量判断</td>
+        <td>基础设施层负责接入与落地，不负责定义规则。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="permission-boundary">权限边界</h3>
+    <p>ICCE 里的“权限节点判断”不要当成单一概念处理，最好拆成三类：权限数据、权限判定、权限展示。这样可以避免把后端授权、业务规则和 UI 状态混在同一层。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>类型</th>
+        <th>主要职责</th>
+        <th>建议归位</th>
+        <th>典型内容</th>
+        <th>不能做什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>权限数据</td>
+        <td>接收并整理外部授权信息</td>
+        <td><code>infrastructure/</code> 或 <code>app/</code></td>
+        <td>角色、节点权限树、项目授权范围、后端返回的可见性标记</td>
+        <td>不做复杂业务判断，不直接控制界面细节</td>
+      </tr>
+      <tr>
+        <td>交互权限判定</td>
+        <td>按用户权限和 <code>DiagramType</code> 判断 UI 交互是否可用</td>
+        <td><code>permissions/</code>，由 UI 入口调用</td>
+        <td>能否创建图形、能否删除、能否设置包含关系、能否操作某类节点</td>
+        <td>不直接操作组件，不写死展示逻辑</td>
+      </tr>
+      <tr>
+        <td>权限展示</td>
+        <td>根据判定结果决定展示方式</td>
+        <td><code>ui/</code></td>
+        <td>按钮置灰、菜单隐藏、节点禁用、提示文案、无权限 tooltip</td>
+        <td>不自己重新计算权限，不直接读后端原始授权结构</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      判断原则：用户交互资格由 <code>permissions/</code> 提供给 UI；授权信息来源由基础设施或页面会话提供；领域规则只回答数据结构是否合法。
+    </div>
+    <h4>结合当前架构的落点</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>现有位置</th>
+        <th>建议调整</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>canvas-controller.ts</code> 中的权限判断</td>
+        <td>迁移到 <code>permissions/</code>，由 UI 交互入口直接调用</td>
+        <td>控制器和 command 不再夹杂权限 if 分支。</td>
+      </tr>
+      <tr>
+        <td>工具栏、节点菜单、快捷键里的权限判断</td>
+        <td>改为消费统一的权限视图模型</td>
+        <td>UI 只显示判定结果，不重复实现判定逻辑。</td>
+      </tr>
+      <tr>
+        <td>图类型差异、区域嵌套限制、父子关系限制</td>
+        <td>下沉到 <code>domain/rules/</code></td>
+        <td>这些本质上是业务能力边界，不是单纯的展示权限。</td>
+      </tr>
+      <tr>
+        <td>菜单权限、节点权限、项目级授权</td>
+        <td>放在 <code>infrastructure/</code> 的权限适配层</td>
+        <td>负责把后端授权和会话信息翻译成上层可用的数据结构。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="warning">
+      不建议把权限码散落在组件、工具和 store 里。权限函数集中在 <code>permissions/</code>，UI 入口消费结果，Application command 不重复校验。
+    </div>
+    <h4>权限目录建议</h4>
+    <pre><code>permissions/
+├── constants.ts
+├── policy.ts
+└── debug.ts
+
+ui/navigation/
+└── tabs.ts</code></pre>
+    <table>
+      <thead>
+      <tr>
+        <th>文件</th>
+        <th>职责</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>permission-evaluator.ts</code></td>
+        <td>把权限数据和业务规则合并成结论</td>
+        <td>输出“能做什么、不能做什么、原因是什么”</td>
+      </tr>
+      <tr>
+        <td><code>command-guard.ts</code></td>
+        <td>在命令执行前做统一拦截</td>
+        <td>避免每个命令都自己写权限判断</td>
+      </tr>
+      <tr>
+        <td><code>permission-view-model.ts</code></td>
+        <td>把权限结果整理成 UI 可直接消费的结构</td>
+        <td>负责按钮、菜单、节点的可见性和可用性</td>
+      </tr>
+      <tr>
+        <td><code>permission-types.ts</code></td>
+        <td>统一权限相关类型与枚举</td>
+        <td>避免权限判断散落裸字符串</td>
+      </tr>
+      </tbody>
+    </table>
+    <h4>现有判断归位</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>现有判断</th>
+        <th>建议归位</th>
+        <th>原因</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>按钮是否可点、菜单是否显示</td>
+        <td><code>ui/</code> + <code>permission-view-model.ts</code></td>
+        <td>这是权限结果的展示，不是判定本身。</td>
+      </tr>
+      <tr>
+        <td>某个命令是否允许执行</td>
+        <td><code>command-guard.ts</code></td>
+        <td>这是应用层的统一入口校验，适合集中处理。</td>
+      </tr>
+      <tr>
+        <td>当前图类型是否允许某类节点操作</td>
+        <td><code>domain/rules/</code></td>
+        <td>这是业务能力边界，不应该只在 UI 上判断。</td>
+      </tr>
+      <tr>
+        <td>后端返回的菜单树、节点授权、角色信息</td>
+        <td><code>infrastructure/</code></td>
+        <td>这是权限数据源，应该先被标准化，再交给上层判定。</td>
+      </tr>
+      <tr>
+        <td>画布中的某个节点是否可操作</td>
+        <td><code>permission-evaluator.ts</code> + <code>domain/rules/</code></td>
+        <td>需要同时考虑授权和图结构规则，不能只看前端状态。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      最稳妥的落法是：数据先进入基础设施层，判定在应用层统一做，图结构约束下沉到领域层，最后由 UI 只消费判定结果。
+    </div>
+    <h4>权限流程图</h4>
+    <div class="flow">
+      <div class="box primary">基础设施</div>
+      <div class="arrow">→</div>
+      <div class="box">权限评估</div>
+      <div class="arrow">→</div>
+      <div class="box">命令拦截</div>
+      <div class="arrow">→</div>
+      <div class="box green">命令执行 / UI 展示</div>
+    </div>
+    <h4>判定步骤</h4>
+    <ol>
+      <li>标准化输入，形成统一判定请求。</li>
+      <li>先判权限范围，再判业务规则。</li>
+      <li>汇总结论，输出给命令拦截和 UI。</li>
+    </ol>
+    <h4>输入输出约定</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>对象</th>
+        <th>输入</th>
+        <th>输出</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>permission-evaluator.ts</code></td>
+        <td>授权树、用户身份、图类型、当前上下文、目标命令</td>
+        <td>允许/拒绝、原因、可执行动作</td>
+        <td>输出直接面向 UI 和命令入口。</td>
+      </tr>
+      <tr>
+        <td><code>command-guard.ts</code></td>
+        <td>命令名、执行参数、权限结论、上下文元数据</td>
+        <td>通过/拦截、错误码、提示文案</td>
+        <td>把判定结果收口为统一校验。</td>
+      </tr>
+      <tr>
+        <td><code>permission-view-model.ts</code></td>
+        <td>权限结论、UI 场景、目标节点或按钮</td>
+        <td>按钮状态、菜单状态、节点状态、提示信息</td>
+        <td>只做展示映射，不重算规则。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h4>结论结构示例</h4>
+    <pre><code>type PermissionDecision = {
+  allowed: boolean;
+  reason?: string;
+  visibleActions?: string[];
+  disabledActions?: string[];
+  scope?: {
+    targetId?: string;
+    diagramType?: string;
+  };
+};</code></pre>
+    <ul>
+      <li><code>allowed</code> 表示命令能不能执行。</li>
+      <li><code>reason</code> 用于提示无权限原因或拦截原因。</li>
+      <li><code>visibleActions</code>、<code>disabledActions</code> 用于 UI 直接消费。</li>
+      <li><code>scope</code> 用于说明这次判定作用在哪个目标上。</li>
+    </ul>
+    <h4>职责对照</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>模块</th>
+        <th>核心职责</th>
+        <th>不负责什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>permission-evaluator.ts</code></td>
+        <td>计算是否允许、允许哪些动作、拒绝原因是什么</td>
+        <td>不拦截命令，不控制 UI，不执行业务操作</td>
+      </tr>
+      <tr>
+        <td><code>command-guard.ts</code></td>
+        <td>根据结论决定命令是否继续，并返回拦截信息</td>
+        <td>不重算权限，不判断图结构规则，不操作视图状态</td>
+      </tr>
+      </tbody>
+    </table>
+    <h4>与领域规则的边界</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>问题类型</th>
+        <th>放哪层</th>
+        <th>判断依据</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>用户有没有资格执行某命令</td>
+        <td><code>permissions/</code></td>
+        <td>UI 交互权限判断与入口控制。</td>
+      </tr>
+      <tr>
+        <td>某图类型是否允许某类节点/关系存在</td>
+        <td><code>domain/rules/</code></td>
+        <td>业务不变量。</td>
+      </tr>
+      <tr>
+        <td>节点是否该显示为可点击、可拖拽、可删除</td>
+        <td><code>ui/</code> + 权限视图模型</td>
+        <td>判定结果的表现层。</td>
+      </tr>
+      <tr>
+        <td>后端返回的权限树怎么映射到前端</td>
+        <td><code>infrastructure/</code></td>
+        <td>数据适配。</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="mapping">3. 现有实现映射</h2>
+  <div class="section">
+    <table>
+      <thead>
+      <tr>
+        <th>现有文件</th>
+        <th>当前定位</th>
+        <th>目标归位</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>canvas/core/canvas-controller.ts</code></td>
+        <td>核心写入口</td>
+        <td>过渡入口，逐步拆为应用层用例与领域服务</td>
+      </tr>
+      <tr>
+        <td><code>canvas/core/canvas-query-controller.ts</code></td>
+        <td>只读查询服务</td>
+        <td>领域查询服务，不再强调控制器语义</td>
+      </tr>
+      <tr>
+        <td><code>canvas/core/viewport-controller.ts</code></td>
+        <td>视口操作服务</td>
+        <td>UI 基础设施服务</td>
+      </tr>
+      <tr>
+        <td><code>canvas/core/highlight-controller.ts</code></td>
+        <td>高亮状态服务</td>
+        <td>UI 状态服务</td>
+      </tr>
+      <tr>
+        <td><code>ui/canvas/useStageEvents.ts</code></td>
+        <td>Stage 事件编排</td>
+        <td>UI 编排层</td>
+      </tr>
+      <tr>
+        <td><code>ui/collaboration/useCollabSync.ts</code></td>
+        <td>协作生命周期宿主</td>
+        <td>UI 编排层；组合协议编码、消息分发、传输订阅和远端回放，不定义或改写协议</td>
+      </tr>
+      <tr>
+        <td><code>ui/collaboration/useRemoteCursor.ts</code></td>
+        <td>远程鼠标交互编排</td>
+        <td>UI 编排层；组合传输、坐标适配、状态和覆盖层，不定义协作协议</td>
+      </tr>
+      <tr>
+        <td><code>infrastructure/event-bus/</code></td>
+        <td>ICCE 强类型事件总线与事件协议</td>
+        <td>基础设施事件通道；画布事件和页面事件分文件声明，共用同一实例</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3>迁移清单</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>分组</th>
+        <th>现有文件</th>
+        <th>目标目录</th>
+        <th>优先级</th>
+        <th>风险</th>
+        <th>阶段</th>
+        <th>迁移说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>页面入口</td>
+        <td><code>icce-detail.vue</code>、<code>icce-demo.vue</code>、<code>index.vue</code></td>
+        <td><code>app/</code></td>
+        <td>高</td>
+        <td>低</td>
+        <td>阶段一</td>
+        <td>只放页面装配和路由入口。</td>
+      </tr>
+      <tr>
+        <td>调试页面</td>
+        <td><code>permission-simulator.vue</code>、<code>validation-simulator.vue</code>、<code>icce-detail-debug.vue</code>、<code>example/</code></td>
+        <td><code>debug/</code></td>
+        <td>高</td>
+        <td>低</td>
+        <td>阶段一</td>
+        <td>仅限开发态和显式调试入口。</td>
+      </tr>
+      <tr>
+        <td>弹窗与抽屉</td>
+        <td><code>dialog/ApprovalModal.vue</code>、<code>dialog/DataDict/</code>、<code>dialog/Template/</code>、<code>dialog/ConditionEditor/</code>、<code>dialog/RegionDialog.vue</code>、<code>dialog/Tree*Drawer.vue</code></td>
+        <td><code>ui/dialog/features/</code>、<code>ui/dialog/tree/</code>、<code>ui/dialog/shared/</code>、<code>ui/dialog/bridge/</code></td>
+        <td>中</td>
+        <td>中</td>
+        <td>阶段二</td>
+        <td>先按业务功能迁移，再抽取异步会话和画布桥接；接口请求、领域规则和画布写入不留在弹窗组件内。</td>
+      </tr>
+      <tr>
+        <td>画布控制器退场</td>
+        <td><code>canvas/core/canvas-controller.ts</code></td>
+        <td><code>application/facade/</code>、<code>application/commands/</code>、<code>infrastructure/adapters/</code></td>
+        <td>高</td>
+        <td>中</td>
+        <td>阶段四</td>
+        <td>阶段四首要任务；先拆分职责和调用边界，再决定是否保留仅负责装配的薄门面。</td>
+      </tr>
+      <tr>
+        <td>只读查询</td>
+        <td><code>canvas/core/canvas-query-controller.ts</code></td>
+        <td><code>domain/queries/</code></td>
+        <td>高</td>
+        <td>低</td>
+        <td>阶段二</td>
+        <td>改为查询服务。</td>
+      </tr>
+      <tr>
+        <td>事件与事务</td>
+        <td><code>infrastructure/event-bus/</code>、<code>infrastructure/transaction/operation-sync.ts</code>、<code>canvas/core/canvas-replay-applier.ts</code></td>
+        <td><code>application/transaction/</code>、<code>infrastructure/event-bus/</code></td>
+        <td>高</td>
+        <td>中</td>
+        <td>阶段二</td>
+        <td>事件总线已完成归位和强类型协议合并；历史记录与命令式回放暂缓，保留当前协作直接回放实现。</td>
+      </tr>
+      <tr>
+        <td>图形规则</td>
+        <td><code>canvas/utils/shape-property.ts</code>、<code>canvas/utils/shape-utils.ts</code>、<code>canvas/utils/shape-rich-text.ts</code></td>
+        <td><code>domain/services/</code>、<code>domain/model/</code></td>
+        <td>中</td>
+        <td>中</td>
+        <td>阶段三</td>
+        <td>把稳定规则从工具中抽离。</td>
+      </tr>
+      <tr>
+        <td>连线规则</td>
+        <td><code>canvas/utils/line-property.ts</code>、<code>canvas/utils/line-routing.ts</code>、<code>canvas/utils/orthogonal-line-model.ts</code>、<code>canvas/utils/polyline-line-model.ts</code></td>
+        <td><code>domain/services/</code>、<code>domain/model/</code></td>
+        <td>中</td>
+        <td>中</td>
+        <td>阶段三</td>
+        <td>按模型和路由算法拆分。</td>
+      </tr>
+      <tr>
+        <td>区域布局</td>
+        <td><code>canvas/utils/region-constraints.ts</code>、<code>canvas/utils/nesting-drag.ts</code>、<code>canvas/utils/line-scope.ts</code></td>
+        <td><code>domain/services/</code></td>
+        <td>中</td>
+        <td>中</td>
+        <td>阶段三</td>
+        <td>扩展、冲突、包含域下沉。</td>
+      </tr>
+      <tr>
+        <td>图类型规则</td>
+        <td><code>canvas/diagram-rules.ts</code></td>
+        <td><code>domain/rules/</code></td>
+        <td>中</td>
+        <td>低</td>
+        <td>阶段三</td>
+        <td>统一能力、准入和归一化策略。</td>
+      </tr>
+      <tr>
+        <td>状态存储</td>
+        <td><code>canvas/store/</code>、<code>store/icceStore.ts</code>、<code>infrastructure/stores/</code></td>
+        <td><code>infrastructure/stores/</code></td>
+        <td>中</td>
+        <td>低</td>
+        <td>阶段一</td>
+        <td>低耦合状态已完成归位；核心画布状态暂留原目录，后续按耦合度继续迁移。</td>
+      </tr>
+      <tr>
+        <td>协作同步</td>
+        <td><code>infrastructure/collab/</code>、<code>infrastructure/adapters/cursor-canvas-adapter.ts</code>、<code>infrastructure/stores/remote-cursor-store.ts</code>、<code>ui/collaboration/</code></td>
+        <td><code>infrastructure/collab/</code>、<code>infrastructure/adapters/</code>、<code>infrastructure/stores/</code>、<code>ui/collaboration/</code></td>
+        <td>高</td>
+        <td>中</td>
+        <td>阶段二</td>
+        <td>已完成基础归位：操作同步、坐标适配、远程状态和 UI 编排分层管理；后续传输协议继续收口到适配器。</td>
+      </tr>
+      <tr>
+        <td>阶段编排</td>
+        <td><code>ui/canvas/useStageEvents.ts</code>、<code>ui/canvas/composables/</code></td>
+        <td><code>ui/stage/</code></td>
+        <td>高</td>
+        <td>中</td>
+        <td>阶段二</td>
+        <td>只做输入路由和交互编排。</td>
+      </tr>
+      <tr>
+        <td>工具系统</td>
+        <td><code>ui/tools/</code></td>
+        <td><code>ui/tools/</code></td>
+        <td>中</td>
+        <td>低</td>
+        <td>阶段二</td>
+        <td>按交互类型进一步内聚。</td>
+      </tr>
+      <tr>
+        <td>渲染组件</td>
+        <td><code>canvas/components/</code></td>
+        <td><code>ui/components/</code></td>
+        <td>中</td>
+        <td>低</td>
+        <td>持续推进</td>
+        <td>保留渲染职责，不写核心规则。</td>
+      </tr>
+      <tr>
+        <td>设计文档</td>
+        <td><code>docs/</code></td>
+        <td><code>docs/</code></td>
+        <td>低</td>
+        <td>低</td>
+        <td>持续推进</td>
+        <td>集中承载架构与迁移说明。</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="services">4. 领域服务拆分</h2>
+  <div class="section">
+    <p>领域层按规则边界拆分，不按文件大小或数据操作动词拆分。</p>
+    <p>
+      <span class="pill">containment.service</span>
+      <span class="pill">line-routing.service</span>
+      <span class="pill">region-layout.service</span>
+      <span class="pill">selection.service</span>
+      <span class="pill">hydration.service</span>
+      <span class="pill">diagram-policy.service</span>
+      <span class="pill">validation.service</span>
+    </p>
+    <table>
+      <thead>
+      <tr>
+        <th>服务</th>
+        <th>职责</th>
+        <th>对应现有实现</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>ContainmentService</td>
+        <td>父子关系、区域归属、功能图嵌套、孤儿重挂</td>
+        <td>从 <code>setParent</code>、<code>refreshFunctionContainment</code> 等方法逐步迁移</td>
+      </tr>
+      <tr>
+        <td>LineRoutingService</td>
+        <td>端点同步、折线/正交线路由、连线移动联动</td>
+        <td>从 <code>syncConnectedLine</code>、<code>shiftLines</code> 等方法迁移</td>
+      </tr>
+      <tr>
+        <td>RegionLayoutService</td>
+        <td>区域扩展、推挤、冲突避让、内容布局</td>
+        <td>从 <code>applyRegionExpansionForShape</code>、<code>applyRegionExpansionBatchUpdates</code> 迁移</td>
+      </tr>
+      <tr>
+        <td>SelectionService</td>
+        <td>命中优先级、选择同步、删除后选中态清理</td>
+        <td>从 <code>syncSelectionAfterDeletion</code> 和工具侧选择逻辑迁移</td>
+      </tr>
+      <tr>
+        <td>HydrationService</td>
+        <td>快照恢复、回放装载、初始化修复</td>
+        <td>从 <code>hydrateDiagramData</code>、<code>repairSingleRegionBounds</code> 迁移</td>
+      </tr>
+      <tr>
+        <td>DiagramPolicyService</td>
+        <td>图类型能力差异、准入规则、归一化规则</td>
+        <td>承接 <code>diagram-rules.ts</code> 的策略逻辑</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3>服务边界表</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>服务</th>
+        <th>推荐输入</th>
+        <th>推荐输出</th>
+        <th>不能做什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>ContainmentService</td>
+        <td>childId、parentId、diagramType、relationType、现有关系信息</td>
+        <td>是否允许归属、关系变更结果、必要的重挂建议</td>
+        <td>不直接改 store，不发 UI 事件，不处理拖拽手势</td>
+      </tr>
+      <tr>
+        <td>LineRoutingService</td>
+        <td>lineId、端点信息、移动前后坐标、diagramType</td>
+        <td>路由结果、端点修正、需要联动更新的线段变化</td>
+        <td>不做权限判断，不决定何时提交，不控制选中态展示</td>
+      </tr>
+      <tr>
+        <td>RegionLayoutService</td>
+        <td>regionId、目标边界、padding、参与重排的对象集合</td>
+        <td>扩展后的边界、推挤结果、内容重排建议</td>
+        <td>不负责页面绘制，不写 store，不做命令分发</td>
+      </tr>
+      <tr>
+        <td>SelectionService</td>
+        <td>selectedIds、当前命中对象、删除/移动上下文</td>
+        <td>新的选中集合、清理结果、命中优先级决策</td>
+        <td>不处理鼠标事件本身，不直接改 DOM，不做业务授权</td>
+      </tr>
+      <tr>
+        <td>HydrationService</td>
+        <td>快照数据、恢复范围、修复策略、图类型</td>
+        <td>恢复后的结构、修复摘要、警告列表</td>
+        <td>不直接接管页面初始化，不做交互编排，不处理权限校验</td>
+      </tr>
+      <tr>
+        <td>DiagramPolicyService</td>
+        <td>diagramType、shapeType、relationType、节点属性摘要</td>
+        <td>能力判定、归一化结果、准入结论</td>
+        <td>不控制 UI 表现，不写 store，不承担事务边界</td>
+      </tr>
+      <tr>
+        <td>ValidationService</td>
+        <td>diagramType、shapes、treeNodes、regionIndex、currentUserId、目标规则集</td>
+        <td>校验结果集、命中 targets、修复建议、按规则分组的命中点</td>
+        <td>不直接写入 store，不拦截命令，不控制 UI 显隐，不做命令编排</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这张表的判断标准是：服务负责“算清楚”，不负责“落地执行”。只要开始碰 store、事件、视图或权限入口，它就该继续下沉或上移。
+    </div>
+    <h3>服务输入输出规范</h3>
+    <p><code>domain/services/</code> 里的服务应当围绕“领域规则与稳定计算”设计，输入尽量小而明确，输出尽量结构化、可解释、可测试。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>维度</th>
+        <th>输入要求</th>
+        <th>输出要求</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>形态</td>
+        <td>优先使用显式参数对象，不直接传组件、store、DOM 或 Konva 实例</td>
+        <td>优先返回纯对象、结果结构、决策对象或变更集合</td>
+      </tr>
+      <tr>
+        <td>稳定性</td>
+        <td>输入应可序列化、可记录、可回放，少用函数和外部引用</td>
+        <td>输出应在同样输入下保持确定性，便于测试和重放</td>
+      </tr>
+      <tr>
+        <td>语义</td>
+        <td>参数名要表达业务含义，例如 <code>childId</code>、<code>diagramType</code>、<code>selectedIds</code></td>
+        <td>返回值要说明“发生了什么”，不要只返回一个裸布尔值</td>
+      </tr>
+      <tr>
+        <td>边界</td>
+        <td>输入只放本次计算必须的内容，不塞 UI 过程态和临时预览态</td>
+        <td>输出不要混 UI 文案、路由跳转或组件状态</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      服务层最重要的约束是“输入小、输出清楚”。一旦服务开始直接改 store、发事件或拼 UI 状态，它就已经偏离领域服务职责了。
+    </div>
+    <h3>与命令的边界</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>领域服务</th>
+        <th>对应命令</th>
+        <th>边界说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>ContainmentService</td>
+        <td>SetContainment、CreateShape、DeleteSelection</td>
+        <td>服务负责判断父子关系和图类型差异，命令负责触发这次关系变更。</td>
+      </tr>
+      <tr>
+        <td>LineRoutingService</td>
+        <td>ConnectLine、MoveSelection</td>
+        <td>服务负责线路由和端点联动，命令负责组织创建或移动流程。</td>
+      </tr>
+      <tr>
+        <td>RegionLayoutService</td>
+        <td>CreateShape、MoveSelection、DeleteSelection</td>
+        <td>服务负责区域扩展和内容重排，命令负责把本次位置变化完整执行完。</td>
+      </tr>
+      <tr>
+        <td>SelectionService</td>
+        <td>MoveSelection、DeleteSelection</td>
+        <td>服务负责选中态修正与命中优先级，命令负责把选择相关变化串起来。</td>
+      </tr>
+      <tr>
+        <td>HydrationService</td>
+        <td>HydrateDiagram</td>
+        <td>服务负责快照恢复和结构修复，命令负责把恢复过程接入事务和回放链路。</td>
+      </tr>
+      <tr>
+        <td>DiagramPolicyService</td>
+        <td>CreateShape、SetContainment、HydrateDiagram</td>
+        <td>服务负责图类型规则和准入策略，命令不直接写死具体图类型分支。</td>
+      </tr>
+      <tr>
+        <td>ValidationService</td>
+        <td>ValidateDiagram、HydrateDiagram</td>
+        <td>服务负责图完整性校验与命中点收集，命令负责把校验结果接到事务或恢复流程。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      判断标准很简单：如果逻辑是在回答“这件事能不能做、应该怎么判定”，优先放服务；如果逻辑是在回答“这次用户操作要按什么顺序执行”，优先放命令。
+    </div>
+    <h3>现有方法归位</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>现有方法</th>
+        <th>优先归位</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>setParent</code></td>
+        <td><code>SetContainment</code> + <code>ContainmentService</code></td>
+        <td>命令负责触发关系变更，服务负责判断父子是否可归属。</td>
+      </tr>
+      <tr>
+        <td><code>setContainmentRelation</code></td>
+        <td><code>ContainmentService</code></td>
+        <td>这是纯关系落地逻辑，应该下沉为领域服务内部能力。</td>
+      </tr>
+      <tr>
+        <td><code>refreshFunctionContainment</code></td>
+        <td><code>ContainmentService</code></td>
+        <td>属于功能图嵌套修复，不适合留在命令层。</td>
+      </tr>
+      <tr>
+        <td><code>applyShapeCreationRelations</code>、<code>applyFunctionShapeCreationRelations</code></td>
+        <td><code>CreateShape</code> + <code>ContainmentService</code></td>
+        <td>创建流程由命令发起，嵌套判定与挂接规则交给领域服务。</td>
+      </tr>
+      <tr>
+        <td><code>applyRegionExpansionForShape</code>、<code>applyRegionExpansionBatchUpdates</code></td>
+        <td><code>RegionLayoutService</code></td>
+        <td>区域扩展和推挤属于稳定规则，不应散在控制器里。</td>
+      </tr>
+      <tr>
+        <td><code>syncConnectedLine</code>、<code>syncConnectedLinesForBatchUpdates</code>、<code>shiftLines</code></td>
+        <td><code>MoveSelection</code> + <code>LineRoutingService</code></td>
+        <td>命令负责移动意图，服务负责连线路由和端点联动。</td>
+      </tr>
+      <tr>
+        <td><code>syncSelectionAfterDeletion</code></td>
+        <td><code>DeleteSelection</code> + <code>SelectionService</code></td>
+        <td>删除后的选中态修正属于领域规则，命令只负责把删除流程走完。</td>
+      </tr>
+      <tr>
+        <td><code>hydrateDiagramData</code>、<code>repairSingleRegionBounds</code></td>
+        <td><code>HydrateDiagram</code> + <code>HydrationService</code></td>
+        <td>恢复与修复应该是明确的恢复流程，不再混入通用控制器。</td>
+      </tr>
+      <tr>
+        <td><code>moveShapesWithStrategy</code>、<code>updateShape</code>、<code>updateLine</code></td>
+        <td>移动/编辑类命令 + 对应领域服务</td>
+        <td>这类方法要继续向“用户意图”收敛，避免保留通用写入口语义。</td>
+      </tr>
+      <tr>
+        <td><code>removeShapes</code>、<code>removeLine</code></td>
+        <td><code>DeleteSelection</code></td>
+        <td>删除入口应统一收口，避免按对象类型拆出太多并列入口。</td>
+      </tr>
+      <tr>
+        <td><code>validateRule</code> 及 <code>validators.ts</code> 中各规则函数</td>
+        <td><code>ValidateDiagram</code> + <code>ValidationService</code> + <code>domain/rules/validation-rules.ts</code></td>
+        <td>纯判定进规则，组合与命中点收集进服务，命令只负责触发与回放衔接。</td>
+      </tr>
+      <tr>
+        <td><code>findSubmittedRegionOwnersToReset</code></td>
+        <td><code>MoveSelection</code> / <code>DeleteSelection</code> + <code>ValidationService</code></td>
+        <td>本质是变更触发的提交态反算，应由命令前置调用服务产出待重置集合，不应作为独立验证规则混在 <code>validation/</code> 目录。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这张表的目标不是一次性把所有方法改名，而是先明确“谁负责做决定，谁负责执行”，后续迁移时只需要按表逐步抽离。
+    </div>
+    <h3>工具归位</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>工具分组</th>
+        <th>现有文件</th>
+        <th>优先归位</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>图形属性与样式</td>
+        <td><code>shape-property.ts</code>、<code>line-property.ts</code></td>
+        <td><code>domain/services/</code>、<code>domain/model/</code></td>
+        <td>负责属性归一、样式解析、补丁生成，属于模型规则和领域服务能力。</td>
+      </tr>
+      <tr>
+        <td>图形几何与边界</td>
+        <td><code>shape-utils.ts</code>、<code>line-scope.ts</code>、<code>line-routing.ts</code>、<code>orthogonal-line-model.ts</code>、<code>polyline-line-model.ts</code></td>
+        <td><code>domain/services/</code>、<code>domain/model/</code></td>
+        <td>负责边界计算、连线归属、路由和模型更新，应该从通用工具里收敛出去。</td>
+      </tr>
+      <tr>
+        <td>区域与嵌套规则</td>
+        <td><code>region-constraints.ts</code>、<code>nesting-drag.ts</code></td>
+        <td><code>domain/services/</code></td>
+        <td>负责区域推挤、冲突处理、嵌套辅助，是典型业务规则，不适合长期留在工具目录。</td>
+      </tr>
+      <tr>
+        <td>快捷加号与预览</td>
+        <td><code>quick-add-rules.ts</code>、<code>quick-add-preview.ts</code>、<code>quick-add-position.ts</code></td>
+        <td><code>ui/tools/</code>、<code>domain/services/</code></td>
+        <td>其中规则判断应上提到领域层，位置和预览渲染可保留在交互工具层。</td>
+      </tr>
+      <tr>
+        <td>富文本与标签</td>
+        <td><code>canvas-text.ts</code>、<code>shape-rich-text.ts</code>、<code>shape-rich-text-readonly.ts</code>、<code>rich-text-drop.ts</code></td>
+        <td><code>domain/model/</code>、<code>domain/services/</code>、<code>ui/adapters/</code></td>
+        <td>文本结构和转换规则应沉淀到领域层，拖放与编辑桥接留在 UI 适配层。</td>
+      </tr>
+      <tr>
+        <td>渲染与定位</td>
+        <td><code>overlay-positioning.ts</code>、<code>canvas-cursor.ts</code>、<code>size-scale.ts</code>、<code>constants/shape-style.ts</code>、<code>canvas-visual-config.ts</code>、<code>CanvasVisualNode.vue</code></td>
+        <td><code>ui/</code></td>
+        <td>这些文件主要服务视图定位、样式和交互表现，适合留在 UI 侧。</td>
+      </tr>
+      <tr>
+        <td>交互桥接</td>
+        <td><code>konva-node.ts</code>、<code>connection-point-hit.ts</code>、<code>text-edit-request.ts</code>、<code>shape-rich-text-registry.ts</code></td>
+        <td><code>ui/adapters/</code>、<code>infrastructure/</code></td>
+        <td>这些代码负责把渲染节点和业务对象互相映射，属于适配而不是规则。</td>
+      </tr>
+      <tr>
+        <td>独立子模块</td>
+        <td><code>force/</code>、<code>throttle.ts</code></td>
+        <td><code>ui/</code> 或独立能力模块</td>
+        <td>力导向布局和节流都不应散落在业务规则里，必要时可以独立成子模块。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      纯数学计算、纯字符串转换、纯坐标换算可以继续留在工具层；一旦出现“图类型差异、包含关系、结构修复、协作回放”这些语义，就应该考虑上提到领域层或应用层。
+    </div>
+  </div>
+
+  <h2 id="usecases">5. 应用层用例</h2>
+  <div class="section">
+    <p>应用层不按“增删改查”组织，而按“用户意图”组织。</p>
+    <div class="note">
+      这里的“用户意图”，指的是用户站在业务层面真正想完成的一件事，而不是系统内部的某个技术步骤。比如“创建图形”“移动选中项”“删除选中项”“设置包含关系”“恢复画布”都是意图；“更新属性”“同步连线端点”“写入存储”“刷新视图”不是意图，而是实现步骤。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>用例</th>
+        <th>职责</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>CreateShape</td>
+        <td>创建图形</td>
+        <td>调用领域服务完成准入、布局和关系创建</td>
+      </tr>
+      <tr>
+        <td>MoveSelection</td>
+        <td>移动选中项</td>
+        <td>处理批量移动、区域扩展、连线联动</td>
+      </tr>
+      <tr>
+        <td>DeleteSelection</td>
+        <td>删除选中项</td>
+        <td>负责级联删除、选中态同步和事件广播</td>
+      </tr>
+      <tr>
+        <td>ConnectLine</td>
+        <td>连接图形</td>
+        <td>处理连线创建、端点校验和路由初始化</td>
+      </tr>
+      <tr>
+        <td>SetContainment</td>
+        <td>设置包含关系</td>
+        <td>处理父子归属和图类型差异</td>
+      </tr>
+      <tr>
+        <td>HydrateDiagram</td>
+        <td>恢复画布</td>
+        <td>处理快照恢复和结构修复</td>
+      </tr>
+      <tr>
+        <td>ValidateDiagram</td>
+        <td>校验图完整性</td>
+        <td>按规则集收集命中点，产出可消费的校验结果</td>
+      </tr>
+    </tbody>
+    </table>
+    <div class="decision">
+      应用层默认只保留命令入口；如果后续出现复合提交或横切装饰需求，再补一个极薄的门面壳。门面只做用例分发、提交边界管理和统一事件出口，不再承担业务规则。这里的“提交边界”指确认落账的时刻，不是鼠标拖拽或按键过程本身。
+    </div>
+    <h3>意图拆解</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>用户意图</th>
+        <th>命令输入</th>
+        <th>主要调用</th>
+        <th>输出结果</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>创建图形</td>
+        <td>图类型、坐标、来源、容器信息</td>
+        <td><code>CreateShape</code> + <code>DiagramPolicyService</code> + <code>ContainmentService</code> + <code>RegionLayoutService</code></td>
+        <td>新增图形、必要的归属关系、事务记录和创建事件</td>
+      </tr>
+      <tr>
+        <td>移动选中项</td>
+        <td>选中项集合、位移量、批量更新选项</td>
+        <td><code>MoveSelection</code> + <code>SelectionService</code> + <code>RegionLayoutService</code> + <code>LineRoutingService</code></td>
+        <td>图形和连线完成联动位移，选中态与区域状态同步修正</td>
+      </tr>
+      <tr>
+        <td>删除选中项</td>
+        <td>选中项集合、删除模式、回放元数据</td>
+        <td><code>DeleteSelection</code> + <code>SelectionService</code> + <code>DiagramPolicyService</code></td>
+        <td>目标对象级联删除，选中态清理，操作被记录并广播</td>
+      </tr>
+      <tr>
+        <td>设置包含关系</td>
+        <td>子对象、父对象、关系类型、来源</td>
+        <td><code>SetContainment</code> + <code>ContainmentService</code> + <code>DiagramPolicyService</code></td>
+        <td>父子关系落地，必要时同步修复关联连线和嵌套状态</td>
+      </tr>
+      <tr>
+        <td>恢复画布</td>
+        <td>快照数据、恢复范围、修复策略</td>
+        <td><code>HydrateDiagram</code> + <code>HydrationService</code> + <code>DiagramPolicyService</code></td>
+        <td>画布结构恢复、异常状态修复、历史或协作链路可继续推进</td>
+      </tr>
+      <tr>
+        <td>校验图完整性</td>
+        <td>图类型、图形集、结构树、当前用户、目标规则集</td>
+        <td><code>ValidateDiagram</code> + <code>ValidationService</code> + <code>DiagramPolicyService</code></td>
+        <td>校验结果集、命中 targets、按规则分组的修复建议</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="command-rules">命令规范</h3>
+  <div class="section">
+    <p><code>application/commands/</code> 里的命令统一按“一个命令对应一个用户意图”的原则设计。更细的意图拆解已放在“应用层用例”中，这里只保留命令边界与执行规则。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>规则</th>
+        <th>要求</th>
+        <th>目的</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>单一意图</td>
+        <td>一个命令只表达一个可识别的用户动作，例如创建图形、删除选中项、设置包含关系</td>
+        <td>避免一个命令混入多个业务目标，降低后续拆分成本</td>
+      </tr>
+      <tr>
+        <td>只做编排</td>
+        <td>命令只负责调用顺序、事务包裹、事件派发和元数据记录，不承载核心规则</td>
+        <td>把规则稳定沉到领域层，命令保持薄</td>
+      </tr>
+      <tr>
+        <td>不碰 UI</td>
+        <td>不直接读取组件状态，不操作 DOM / Konva，不处理鼠标键盘等交互细节</td>
+        <td>减少对视图层和具体渲染实现的耦合</td>
+      </tr>
+      <tr>
+        <td>可回放</td>
+        <td>进入历史或协作链路的命令必须尽量确定性，随机值、时间戳、临时标识要统一注入</td>
+        <td>保证撤销、重做、协作回放结果一致</td>
+      </tr>
+      <tr>
+        <td>不直连实现存储</td>
+        <td>优先依赖应用上下文或命令入口，不直接绑定具体 Store 实现</td>
+        <td>方便后续替换状态实现或调整协作链路</td>
+      </tr>
+      <tr>
+        <td>命名稳定</td>
+        <td>文件名采用“动词-对象”的形式，类名或导出名与文件名保持一致</td>
+        <td>让命令语义一眼可读，减少歧义</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      如果某个命令开始出现大量分支、循环和规则判断，通常说明它已经膨胀了，应把核心逻辑下沉到领域服务，再让命令只保留编排壳。
+    </div>
+    <h4>输入输出规范</h4>
+    <ul>
+      <li>输入优先使用稳定的参数对象，不要直接把组件实例、事件对象或 Store 整个传进来。</li>
+      <li>输入里只保留执行本次意图必须的数据，例如目标标识、位置、关系信息、选择范围、快照版本。</li>
+      <li>输出优先返回明确结果或执行状态，不要依赖外部副作用来表达结果。</li>
+      <li>如果命令失败，失败原因应可枚举、可解释，避免只抛出不透明的通用异常。</li>
+      <li>凡是需要重放的字段，都应从输入里显式传入或由上层统一注入，避免命令内部临时生成后无法复现。</li>
+    </ul>
+    <h4>边界示例</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>场景</th>
+        <th>应该放在这里</th>
+        <th>不应该放在这里</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>创建图形</td>
+        <td>校验准入、调用领域服务、写入事务、发出创建事件</td>
+        <td>计算拖拽框坐标、处理鼠标按下/抬起、直接操作渲染对象</td>
+      </tr>
+      <tr>
+        <td>删除选中项</td>
+        <td>判断删除顺序、级联处理、同步选中态、提交操作记录</td>
+        <td>遍历视图节点、改动组件状态、处理高亮闪烁</td>
+      </tr>
+      <tr>
+        <td>设置包含关系</td>
+        <td>根据领域规则决定父子归属，必要时调用区域或图类型策略</td>
+        <td>直接写死某个图类型的特殊逻辑，绕过领域规则</td>
+      </tr>
+      <tr>
+        <td>恢复画布</td>
+        <td>读取快照、调用修复服务、统一修复结构和事件状态</td>
+        <td>边恢复边渲染、在命令里临时拼接 UI 结构</td>
+      </tr>
+      </tbody>
+    </table>
+    <h4>推荐写法</h4>
+    <pre><code>type CommandResult = {
+  ok: true;
+  meta?: {
+    operationId?: string;
+    transactionId?: string;
+    shapeId?: string;
+  };
+} | {
+  ok: false;
+  code: string;
+  message: string;
+};
+
+type CreateShapeInput = {
+  diagramId: string;
+  shapeType: string;
+  position: { x: number; y: number };
+  containerId?: string;
+  source?: 'user' | 'collab' | 'replay' | 'import';
+};
+
+    async function executeCreateShape(
+      input: CreateShapeInput,
+      ctx: CommandContext,
+    ): Promise&lt;CommandResult&gt; {
+      const decision = await ctx.policy.canCreateShape(input);
+      if (!decision.allowed) {
+        return { ok: false, code: decision.code, message: decision.reason };
+      }
+
+      const containmentPlan = input.containerId
+        ? await ctx.containmentService.planAfterCreate({
+            diagramId: input.diagramId,
+            shapeType: input.shapeType,
+            containerId: input.containerId,
+          })
+        : null;
+      const layoutPlan = await ctx.regionLayoutService.planAfterCreate({
+        diagramId: input.diagramId,
+        shapeType: input.shapeType,
+        position: input.position,
+        containerId: input.containerId ?? null,
+      });
+
+      const meta = await ctx.transaction.run(async () =&gt; {
+        const shape = await ctx.shapeService.create({
+          ...input,
+          containmentPlan,
+          layoutPlan,
+        });
+        await ctx.shapesStore.add(shape);
+        return {
+          operationId: ctx.meta.nextOperationId(),
+          transactionId: ctx.meta.currentTransactionId(),
+          shapeId: shape.id,
+        };
+      });
+
+      return { ok: true, meta };
+    }</code></pre>
+    <div class="note">
+      如果创建后还需要补挂接或区域调整，不要拆成第二个命令，也不要把中间状态交给 UI 处理；应当继续在同一命令里完成前置判定和事务写入。只有当多个命令形成稳定复用的复合流程时，才考虑上提为 facade。
+    </div>
+    <h4>与可选门面壳的关系</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>层级</th>
+        <th>职责</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>可选门面壳</td>
+        <td>对外统一入口</td>
+        <td>负责命令分发、事务边界、统一事件出口和对外接口稳定</td>
+      </tr>
+      <tr>
+        <td>命令</td>
+        <td>执行单个意图</td>
+        <td>负责把一个用户动作完整执行完，内部可以调用多个领域服务</td>
+      </tr>
+      <tr>
+        <td>领域服务</td>
+        <td>承载规则</td>
+        <td>负责图类型差异、包含关系、路由、布局等稳定规则</td>
+      </tr>
+    </tbody>
+    </table>
+    <div class="note">
+      直观理解就是：如果存在门面壳，它只负责对外说“我要做什么”；命令负责“把这件事做完”；领域服务负责“这件事的规则是什么”。
+    </div>
+    <h4>可选门面规范</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>规则</th>
+        <th>要求</th>
+        <th>目的</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>只做收口</td>
+        <td>门面壳只负责对外统一入口、命令分发和编排，不写业务规则</td>
+        <td>避免它膨胀成第二个控制器</td>
+      </tr>
+      <tr>
+        <td>不重复命令逻辑</td>
+        <td>门面壳不应复制命令内部的执行步骤，只负责组合和转发</td>
+        <td>减少重复与分叉</td>
+      </tr>
+      <tr>
+        <td>稳定对外契约</td>
+        <td>对外 API 尽量保持稳定，内部命令可以调整而不影响调用方</td>
+        <td>降低前端、协作、回放和外部适配的耦合</td>
+      </tr>
+      <tr>
+        <td>薄到可消失</td>
+        <td>当系统足够简单时，门面壳可以退化甚至移除，不影响命令层工作</td>
+        <td>避免为了形式而保留一层空壳</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      如果门面壳开始出现大量 if 分支、规则判断或状态变更，那说明它已经偏离“薄壳”定位，应该继续下沉到命令或领域服务。
+    </div>
+    <h4>调用关系图</h4>
+    <div class="flow">
+      <div class="box primary">外部入口</div>
+      <div class="arrow">→</div>
+      <div class="box">可选门面壳</div>
+      <div class="arrow">→</div>
+      <div class="box">commands</div>
+      <div class="arrow">→</div>
+      <div class="box green">domain / transaction / stores</div>
+    </div>
+    <p>如果存在门面壳，它只负责收口和分发；命令负责执行用例；后面的领域、事务和存储都不应该反向依赖门面。</p>
+    <h4>命令清单</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>命令</th>
+        <th>用户意图</th>
+        <th>主要依赖</th>
+        <th>边界说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>CreateShape</td>
+        <td>创建图形</td>
+        <td>diagram-policy、containment、region-layout</td>
+        <td>发起创建流程，不算交互框。</td>
+      </tr>
+      <tr>
+        <td>MoveSelection</td>
+        <td>移动选中项</td>
+        <td>selection、region-layout、line-routing</td>
+        <td>组织批量移动，不识别手势。</td>
+      </tr>
+      <tr>
+        <td>DeleteSelection</td>
+        <td>删除选中项</td>
+        <td>selection、relation、diagram-policy</td>
+        <td>处理级联删除，不管高亮。</td>
+      </tr>
+      <tr>
+        <td>ConnectLine</td>
+        <td>连接图形</td>
+        <td>line-routing、containment</td>
+        <td>创建连线并校验端点。</td>
+      </tr>
+      <tr>
+        <td>SetContainment</td>
+        <td>设置包含关系</td>
+        <td>containment、diagram-policy</td>
+        <td>落地父子归属，不做视觉反馈。</td>
+      </tr>
+      <tr>
+        <td>HydrateDiagram</td>
+        <td>恢复画布</td>
+        <td>hydration、diagram-query、diagram-policy</td>
+        <td>恢复快照并修复结构。</td>
+      </tr>
+      <tr>
+        <td>ValidateDiagram</td>
+        <td>校验图完整性</td>
+        <td>validation、diagram-policy</td>
+        <td>组合规则收集命中点，不触发任何写入。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这张表的作用是防止命令越写越宽。命令如果开始依赖太多领域服务，通常说明它已经接近一个小型流程编排器，需要重新审视边界。
+    </div>
+    <p>下面这张表只回答一个问题：什么时候才值得把 `facade` 浮现出来。默认答案是不引入，只有命令组合或横切装饰确实存在时才考虑。</p>
+    <h4 id="facade-criteria">门面出现时机</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>信号</th>
+        <th>判断结果</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>多个命令必须作为一个提交单元</td>
+        <td>引入 `facade`</td>
+        <td>只做组合和事务边界，不复制命令内部步骤。</td>
+      </tr>
+      <tr>
+        <td>需要统一横切装饰</td>
+        <td>引入 `facade`</td>
+        <td>只做审计、埋点、限流之类的外层包装。</td>
+      </tr>
+      <tr>
+        <td>单一命令即可完成</td>
+        <td>不引入 `facade`</td>
+        <td>直接调命令，不为了统一入口多加一层。</td>
+      </tr>
+      <tr>
+        <td>`facade` 开始出现 if 分支或规则判断</td>
+        <td>不继续扩张</td>
+        <td>说明它已经偏离薄门面定位，应继续下沉。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      默认策略是不先加门面，等命令边界稳定、外部复用需求明确后再补。门面只解决“统一入口”问题，不承担规则收敛。
+    </div>
+    <h4>现有方法到命令映射</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>现有方法</th>
+        <th>优先命令</th>
+        <th>主要下沉服务</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>addShape</code></td>
+        <td>CreateShape</td>
+        <td><code>DiagramPolicyService</code>、<code>ContainmentService</code>、<code>RegionLayoutService</code></td>
+        <td>收口创建入口。</td>
+      </tr>
+      <tr>
+        <td><code>moveShapesWithStrategy</code></td>
+        <td>MoveSelection</td>
+        <td><code>RegionLayoutService</code>、<code>LineRoutingService</code></td>
+        <td>收口移动与联动。</td>
+      </tr>
+      <tr>
+        <td><code>updateShape</code>、<code>updateShapeProperty</code>、<code>updateShapesProperty</code></td>
+        <td>UpdateShape 或归入对应业务命令</td>
+        <td>形状属性相关领域能力</td>
+        <td>附属步骤并入对应命令。</td>
+      </tr>
+      <tr>
+        <td><code>updateLine</code>、<code>updateLineProperty</code>、<code>updateLinesProperty</code></td>
+        <td>UpdateLine 或归入 ConnectLine / MoveSelection</td>
+        <td><code>LineRoutingService</code>、<code>LineProperty</code> 相关领域能力</td>
+        <td>并入连接或移动流程。</td>
+      </tr>
+      <tr>
+        <td><code>removeShapes</code>、<code>removeLine</code>、<code>removeShapeTree</code></td>
+        <td>DeleteSelection</td>
+        <td><code>SelectionService</code>、<code>DiagramPolicyService</code></td>
+        <td>统一删除入口。</td>
+      </tr>
+      <tr>
+        <td><code>setParent</code>、<code>setContainmentRelation</code>、<code>refreshFunctionContainment</code></td>
+        <td>SetContainment</td>
+        <td><code>ContainmentService</code>、<code>DiagramPolicyService</code></td>
+        <td>统一归属与嵌套。</td>
+      </tr>
+      <tr>
+        <td><code>hydrateDiagramData</code></td>
+        <td>HydrateDiagram</td>
+        <td><code>HydrationService</code>、<code>DiagramPolicyService</code></td>
+        <td>统一恢复入口。</td>
+      </tr>
+      <tr>
+        <td><code>clearDiagramData</code></td>
+        <td>HydrateDiagram 或独立 ResetDiagram</td>
+        <td><code>HydrationService</code></td>
+        <td>按语义并入恢复或独立。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这张表的目的不是给现有方法强行贴标签，而是明确迁移优先级：先把高频入口收口到命令，再把判断逻辑下沉到领域服务，最后再处理剩余的通用写入口。
+    </div>
+    <h4>前后对照</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>代码片段</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>当前</td>
+        <td><pre><code>function addShape(shape) {
+  shapesStore.add(shape);
+  eventBus.emit('shape:add', shape);
+}</code></pre></td>
+        <td>直接写入并广播，调用方看不到判定和事务边界。</td>
+      </tr>
+      <tr>
+        <td>目标</td>
+        <td><pre><code>async function executeCreateShape(input, ctx) {
+  const decision = await ctx.policy.canCreateShape(input);
+  if (!decision.allowed) return { ok: false, code: decision.code, message: decision.reason };
+
+  const containmentPlan = input.containerId
+    ? await ctx.containmentService.planAfterCreate({
+        diagramId: input.diagramId,
+        shapeType: input.shapeType,
+        containerId: input.containerId,
+      })
+    : null;
+  const layoutPlan = await ctx.regionLayoutService.planAfterCreate({
+    diagramId: input.diagramId,
+    shapeType: input.shapeType,
+    position: input.position,
+    containerId: input.containerId ?? null,
+  });
+
+  return ctx.transaction.run(async () =&gt; {
+    const shape = await ctx.shapeService.create({
+      ...input,
+      containmentPlan,
+      layoutPlan,
+    });
+    await ctx.shapesStore.add(shape);
+    await ctx.eventBus.emit('shape:add', shape);
+    return {
+      ok: true,
+      meta: {
+        operationId: ctx.meta.nextOperationId(),
+        transactionId: ctx.meta.currentTransactionId(),
+        shapeId: shape.id,
+      },
+    };
+  });
+}</code></pre></td>
+        <td>先判定，再做归属和布局预计算，最后统一写入和广播。</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="migration">6. 渐进式迁移策略</h2>
+  <div class="section">
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>目标</th>
+        <th>验收方式</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>阶段一</td>
+        <td>隔离 debug、示例和生产入口</td>
+        <td>生产构建不引用调试页</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>拆出只读查询、协作适配、阶段编排</td>
+        <td>调用方行为不变，内部职责更清晰</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>拆出 containment、line、region 领域服务</td>
+        <td>控制器体积明显下降，单测按服务收敛</td>
+      </tr>
+      <tr>
+        <td>阶段四</td>
+        <td>收敛 hydration、transaction</td>
+        <td>回放、历史和协作走统一事务路径；是否引入门面壳视需求决定</td>
+      </tr>
+    </tbody>
+    </table>
+    <h3 id="anti-patterns">反模式与暂缓项</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>暂缓项</th>
+        <th>原因</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>阶段一</td>
+        <td>不要顺手改协作协议、状态格式或 store 结构</td>
+        <td>先隔离边界，再改数据形态，避免一次改太多。</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>不要把工具事件负载直接换成领域 DTO</td>
+        <td>工具层先保持输入输出稳定，内部再逐步转向命令。</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>不要为领域服务额外引入 DI 容器或第二套规则引擎</td>
+        <td>先把规则收进服务，再考虑是否需要更重的装配方式。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="phase-critical-cases">阶段关键用例</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>必测用例</th>
+        <th>通过标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>阶段一</td>
+        <td>调试页隔离、示例页剔除、生产入口检查</td>
+        <td>生产构建不引用调试页，CI 能稳定拒绝调试资源进入主链路。</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>工具切换、拖拽创建、协作消息回放、只读查询</td>
+        <td>输入形式可以调整，交互结果和回放结果不变。</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>快捷键、滚轮缩放、选中态同步</td>
+        <td>事件路由拆开后，用户可见行为保持一致。</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>创建图形、移动选中项、删除选中项、设置包含关系</td>
+        <td>命令能稳定串起领域服务，单测可以直接覆盖结果。</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>连线移动、区域扩展、孤儿重挂</td>
+        <td>核心规则已沉到底层，控制器不再承接复杂分支。</td>
+      </tr>
+      <tr>
+        <td>阶段四</td>
+        <td>快照恢复、事务记录、协作同步</td>
+        <td>恢复、历史和协作走统一事务路径，回放结果可对齐。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="migration-path">迁移阶段图</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>重点输入</th>
+        <th>核心动作</th>
+        <th>阶段产出</th>
+        <th>验收标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>阶段一</td>
+        <td>调试页、示例页、现有查询层</td>
+        <td>隔离调试与生产入口，重命名只读查询服务，明确协作适配边界</td>
+        <td>生产链路更干净，查询语义更清晰</td>
+        <td>生产构建不引用调试页，调用方行为不变</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>阶段编排、工具行为、协作同步</td>
+        <td>把事件路由、快捷键、拖拽创建与协作同步拆到更薄的 UI / 基础设施层</td>
+        <td>UI 编排与消息适配开始解耦</td>
+        <td>工具交互不变，协作消息格式稳定</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>关系、连线、区域布局</td>
+        <td>抽出 containment、line、region 三类领域服务，收敛控制器中的核心规则</td>
+        <td>规则边界清晰，控制器明显瘦身</td>
+        <td>关键用例通过单测覆盖，回归可控</td>
+      </tr>
+      <tr>
+        <td>阶段四</td>
+        <td>快照恢复、事务记录</td>
+        <td>把 hydration、transaction 收口为稳定入口，门面壳仅在需要时补充</td>
+        <td>应用层完成收敛，必要时再补薄壳</td>
+        <td>协作、历史、恢复都走统一事务路径</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="stop-conditions">停止条件</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>检查项</th>
+        <th>建议阈值</th>
+        <th>含义</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>目录深度</td>
+        <td>≤ 3 层</td>
+        <td>再往下通常只会增加心智负担，不会继续提升边界清晰度。</td>
+      </tr>
+      <tr>
+        <td>命令文件数量</td>
+        <td>≤ 10 个核心命令</td>
+        <td>如果继续增长，先检查是否有命令粒度过细的问题。</td>
+      </tr>
+      <tr>
+        <td>单文件体积</td>
+        <td>≤ 500 行</td>
+        <td>超过后优先拆分职责，不要再往一个文件里叠规则。</td>
+      </tr>
+      <tr>
+        <td>关键路径覆盖</td>
+        <td>100%</td>
+        <td>核心用例必须有单测或回归验证，不能只靠人工确认。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      只要这四项都稳定，就不再主动增加抽象层。若后续新增抽象不带来边界收敛、测试简化或入口减少，就视为过抽。
+    </div>
+    <h3>反向指标</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>信号</th>
+        <th>说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>服务数量继续增长，但职责没有变清楚</td>
+        <td>说明拆分正在变成搬运，应该回头合并。</td>
+      </tr>
+      <tr>
+        <td>命令越来越薄，但调用链越来越长</td>
+        <td>说明只是把复杂度移到了别处，没有真正收敛。</td>
+      </tr>
+      <tr>
+        <td>目录越来越整齐，但修改一个功能需要动很多层</td>
+        <td>说明物理结构先行了，边界没有同步收紧。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="warning">
+      不建议一口气把所有文件按新目录整体搬迁。正确做法是先迁行为边界，再迁物理目录，最后统一导出入口。
+    </div>
+    <h3 id="controller-order">控制器拆分顺序</h3>
+    <p>下面这张表描述的是 <code>canvas-controller.ts</code> 从“单体入口”收敛到“命令 + 领域服务”的推荐顺序。原则是先把可独立验证的动作抽出去，再把稳定规则下沉，最后才清理剩余壳代码。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>顺序</th>
+        <th>先抽内容</th>
+        <th>目标归位</th>
+        <th>原因</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>addShape</code>、<code>removeShapes</code>、<code>removeLine</code>、<code>updateShape</code>、<code>updateLine</code></td>
+        <td><code>application/commands/</code></td>
+        <td>先把用户意图入口收口，控制器不再直接承担操作执行。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>setParent</code>、<code>setContainmentRelation</code>、<code>refreshFunctionContainment</code>、<code>applyShapeCreationRelations</code></td>
+        <td><code>domain/services/containment.service.ts</code></td>
+        <td>包含关系和功能图嵌套是稳定规则，适合最先下沉。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>applyRegionExpansionForShape</code>、<code>applyRegionExpansionBatchUpdates</code>、<code>reparentOrphanedChildren</code></td>
+        <td><code>domain/services/region-layout.service.ts</code></td>
+        <td>区域扩展和孤儿重挂属于一类规则，应尽快从控制器剥离。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>syncConnectedLine</code>、<code>syncConnectedLinesForBatchUpdates</code>、<code>syncConnectedLinesForEndpointRebuild</code>、<code>shiftLines</code></td>
+        <td><code>domain/services/line-routing.service.ts</code></td>
+        <td>连线联动和路由更新逻辑集中度高，抽出后最能降低控制器复杂度。</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>syncSelectionAfterDeletion</code>、<code>hydrateDiagramData</code>、<code>repairSingleRegionBounds</code></td>
+        <td><code>domain/services/selection.service.ts</code>、<code>domain/services/hydration.service.ts</code></td>
+        <td>这些属于收尾修复和恢复逻辑，等主流程稳定后再集中处理。</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>残余的元数据、事件广播、回放标记</td>
+        <td><code>application/transaction/</code>，必要时补 <code>application/facade/</code></td>
+        <td>最后移除控制器，所有生产调用方改由应用层门面、领域服务和基础设施适配协作完成。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      如果拆分过程中发现某段逻辑既不像命令也不像领域服务，通常是因为它同时混了“意图编排”和“规则判断”。这时优先拆出规则，再保留最少量编排代码。
+    </div>
+    <h3 id="utils-order">工具拆分顺序</h3>
+    <p><code>utils/</code> 的拆分原则和控制器不同，它更适合按“领域规则优先、纯转换保留、适配边界独立”来推进。先把带业务语义的工具上提，再保留纯数学、纯转换、纯定位类工具作为最后一层。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>顺序</th>
+        <th>先抽内容</th>
+        <th>目标归位</th>
+        <th>原因</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>shape-property.ts</code>、<code>line-property.ts</code>、<code>shape-rich-text.ts</code>、<code>canvas-text.ts</code></td>
+        <td><code>domain/model/</code> + <code>domain/services/</code></td>
+        <td>这些文件已经在表达模型和规则，最容易先收敛。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>line-routing.ts</code>、<code>orthogonal-line-model.ts</code>、<code>polyline-line-model.ts</code>、<code>line-scope.ts</code></td>
+        <td><code>domain/services/line-routing.service.ts</code></td>
+        <td>连线路由相关逻辑聚合度高，拆出来后收益最大。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>region-constraints.ts</code>、<code>nesting-drag.ts</code>、<code>quick-add-rules.ts</code>、<code>quick-add-preview.ts</code></td>
+        <td><code>domain/services/</code> + <code>ui/tools/</code></td>
+        <td>包含、推挤、快捷加号都属于规则和交互混合区，需要先把规则剥离。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>rich-text-drop.ts</code>、<code>shape-rich-text-readonly.ts</code>、<code>shape-rich-text-registry.ts</code>、<code>text-edit-request.ts</code></td>
+        <td><code>ui/adapters/</code> + <code>domain/model/</code></td>
+        <td>文本编辑、拖放和注册逻辑需要拆成适配层与领域对象两部分。</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>overlay-positioning.ts</code>、<code>canvas-cursor.ts</code>、<code>size-scale.ts</code>、<code>constants/shape-style.ts</code>、<code>canvas-visual-config.ts</code>、<code>CanvasVisualNode.vue</code></td>
+        <td><code>ui/</code></td>
+        <td>这些主要是视图定位和视觉配置，可在规则收敛后再调整物理位置。</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>konva-node.ts</code>、<code>connection-point-hit.ts</code>、<code>force/</code>、<code>throttle.ts</code></td>
+        <td><code>ui/adapters/</code> 或独立能力模块</td>
+        <td>这些更偏适配与支撑能力，放到最后处理对主链路影响最小。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      如果某个工具文件既包含规则判断又包含视图适配，优先把规则抽到领域层，再把适配壳留在 UI 层，避免工具目录继续变成混合垃圾场。
+    </div>
+  </div>
+
+  <h2 id="principles">7. 重构原则</h2>
+  <div class="section">
+    <div class="decision">
+      以下原则用于约束后续所有迁移和新增能力。若与局部实现便利冲突，优先满足原则，再考虑实现成本。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>原则</th>
+        <th>含义</th>
+        <th>落地要求</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>单一职责优先</td>
+        <td>每一层只做自己该做的事，不同时承担规则、适配和展示</td>
+        <td>Store 不编排，UI 不落规则，Domain 不依赖框架</td>
+      </tr>
+      <tr>
+        <td>不过度设计</td>
+        <td>只为已经存在且明确的复杂度增加抽象，不为未来可能的需求预先堆叠层次</td>
+        <td>优先复用已有边界；仅有一层转发、没有独立职责或没有稳定复用场景的门面、适配器和服务不新增，重复包装应合并</td>
+      </tr>
+      <tr>
+        <td>不过度拆分</td>
+        <td>文件边界服务于业务职责和依赖隔离，不以函数数量、代码行数或形式上的单一职责为目标</td>
+        <td>禁止一函数一文件和同一 feature 内的薄模块堆叠；仅在职责独立、稳定复用、可替换依赖或独立测试价值明确时拆文件，其余职责在同一业务文件内组织</td>
+      </tr>
+      <tr>
+        <td>用例驱动优先</td>
+        <td>功能组织方式以用户意图为中心，不以技术动作或文件大小为中心</td>
+        <td>新增能力先定义用例，再落到服务和适配器</td>
+      </tr>
+      <tr>
+        <td>规则下沉优先</td>
+        <td>稳定且可测试的判断逻辑优先沉入领域层</td>
+        <td>图类型、连线、区域、嵌套、选择规则优先进入 domain</td>
+      </tr>
+      <tr>
+        <td>边界隔离优先</td>
+        <td>调试、示例、生产、协作、回放边界清晰可分</td>
+        <td>debug 与生产分离，协作与回放通过适配层接入</td>
+      </tr>
+      <tr>
+        <td>渐进迁移优先</td>
+        <td>先抽壳，再拆分，再改目录，避免一次性大爆炸</td>
+        <td>保持调用方行为稳定，按阶段完成收敛和验证</td>
+      </tr>
+      <tr>
+        <td>显式协议优先</td>
+        <td>事件、命令、协作载荷和元数据必须显式定义</td>
+        <td>禁止散落裸字符串和隐式约定，所有协议集中管理</td>
+      </tr>
+    </tbody>
+    </table>
+  </div>
+
+  <h2 id="schedule">8. 建议的落地顺序</h2>
+  <div class="section">
+    <p>以下计划遵循“先定边界，再拆实现，最后收敛目录”的顺序推进。每个阶段都以行为稳定为前提，避免在结构调整中引入未验证的变化。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>阶段</th>
+        <th>建议周期</th>
+        <th>重点事项</th>
+        <th>阶段产出</th>
+        <th>依赖前置</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>阶段一</td>
+        <td>1 周</td>
+        <td>完成文档落地、目录边界确认、调试页与生产页隔离</td>
+        <td>共识统一，生产链路更干净</td>
+        <td>无</td>
+      </tr>
+      <tr>
+        <td>阶段二</td>
+        <td>1 周</td>
+        <td>收敛查询、协作和阶段编排，先把主入口周边抽薄</td>
+        <td>只读服务、协作适配、交互编排边界清晰</td>
+        <td>阶段一完成</td>
+      </tr>
+      <tr>
+        <td>阶段三</td>
+        <td>1 至 2 周</td>
+        <td>拆出 containment、line、region 三类领域服务，迁移高风险规则</td>
+        <td>核心规则进入 domain，主入口明显瘦身</td>
+        <td>阶段二完成</td>
+      </tr>
+      <tr>
+        <td>阶段四</td>
+        <td>1 周</td>
+        <td>整理 hydration；事务记录和历史回放仅在出现实际需求时建设</td>
+        <td>恢复边界清晰，后续历史能力可按需接入</td>
+        <td>阶段三完成</td>
+      </tr>
+      <tr>
+        <td>阶段五</td>
+        <td>满足停止条件后收口</td>
+        <td>统一目录、文件命名、测试组织和导出入口</td>
+        <td>目录与边界一致，后续维护成本下降</td>
+        <td>前四阶段稳定且停止条件达标</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="migration-checklist">执行清单</h3>
+    <ol>
+      <li>先把查询、协作和阶段编排抽薄。</li>
+      <li>再拆关系、连线和区域布局。</li>
+      <li>用单测锁住新边界后，再统一目录和命名。</li>
+    </ol>
+    <h3 id="current-migration-status">当前落地状态</h3>
+    <p>截至 2026 年 7 月 15 日，第一阶段已完成低风险目录归位和边界整理，第二阶段已完成部分应用命令与统一执行上下文收口，具体状态如下：</p>
+    <table>
+      <thead>
+      <tr>
+        <th>内容</th>
+        <th>当前状态</th>
+        <th>落地结果</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>设计文档</td>
+        <td>已完成</td>
+        <td><code>docs/</code> 已完成归档，并补充忽略规则。</td>
+      </tr>
+      <tr>
+        <td>调试与示例目录</td>
+        <td>部分完成</td>
+        <td>权限模拟器、校验模拟器、调试详情页和 <code>icce-demo</code> 已迁入 <code>debug/</code>；<code>icce-example</code> 入口及其示例组件已移除。</td>
+      </tr>
+      <tr>
+        <td>状态仓库</td>
+        <td>部分完成</td>
+        <td>分屏、连接点、弹窗、预览、交互、选择、高亮状态已迁入 <code>infrastructure/stores/</code>；图形、关系、工具和画布视口状态暂留原目录。</td>
+      </tr>
+      <tr>
+        <td>只读查询</td>
+        <td>部分完成</td>
+        <td>查询实现已迁入 <code>domain/queries/</code>；原画布查询控制器保留为状态仓库适配层，调用方暂不需要集中改造。</td>
+      </tr>
+      <tr>
+        <td>协作光标协议</td>
+        <td>部分完成</td>
+        <td>协作光标消息的协议常量、发送格式和图类型过滤已迁入 <code>infrastructure/collab/</code>；界面组合式函数继续负责生命周期和渲染。</td>
+      </tr>
+      <tr>
+        <td>底部结构树抽屉布局</td>
+        <td>部分完成</td>
+        <td>抽屉展开、收起、尺寸调整和窗口高度适配已迁入 <code>dialog/composables/useTreeBottomDrawerLayout.ts</code>；节点表单映射已迁入 <code>ui/dialog/features/node-info/node-info-form-mapper.ts</code>，树节点选择、表单展示和画布桥接仍由 <code>TreeBottomDrawer.vue</code> 负责。</td>
+      </tr>
+      <tr>
+        <td>节点信息表单</td>
+        <td>部分完成</td>
+        <td>表单值归一化、负责人映射、版本差异组装和校验规则已迁入 <code>ui/dialog/features/node-info/node-info-form-model.ts</code>；节点回填和项目根节点构造已迁入 <code>node-info-form-mapper.ts</code>，负责人统一使用 <code>ShapeManagerInfo</code> 领域字段，组件保留展示、交互事件和表单实例管理。</td>
+      </tr>
+      <tr>
+        <td>缺失节点校验高亮</td>
+        <td>已完成边界整理</td>
+        <td>底部结构树抽屉直接消费统一校验事件传入的节点编号，不再在 UI 组件内重复计算责任人和名称缺失规则。</td>
+      </tr>
+      <tr>
+        <td>阶段编排</td>
+        <td>部分完成</td>
+        <td>图生命周期编排已归位到 <code>ui/canvas/composables/useDiagramLifecycle.ts</code>，画布事件路由已归位到 <code>ui/canvas/useStageEvents.ts</code>；旧画布路径已移除。</td>
+      </tr>
+      <tr>
+        <td>包含关系领域规则</td>
+        <td>部分完成</td>
+        <td>父子关系准入校验、删除计划、删除树计算、孤儿子节点识别和批量刷新顶层候选筛选已迁入 <code>domain/services/containment-service.ts</code>；删除执行编排已迁入 <code>canvas/commands/delete-shape-command.ts</code>，关系写入和事件联动仍由画布控制器协调。</td>
+      </tr>
+      <tr>
+        <td>连线领域规则</td>
+        <td>部分完成</td>
+        <td>连线端点存在性校验、点位平移、批量移动分类、影响范围收集和区域连线收集已迁入 <code>domain/services/line-service.ts</code>；连线写入、事件和同步仍由画布控制器编排。</td>
+      </tr>
+      <tr>
+        <td>区域布局领域规则</td>
+        <td>部分完成</td>
+        <td>区域新增重叠校验、矩形合并、扩容计划和非重叠回退计算已迁入 <code>domain/services/region-layout-service.ts</code>；区域实际更新、推移和连线修复仍由画布控制器编排。</td>
+      </tr>
+      <tr>
+        <td>快照恢复领域服务</td>
+        <td>部分完成</td>
+        <td>快照恢复所需的关系图构建、后代收集、连线包含范围和区域修复计划已迁入 <code>domain/services/hydration-service.ts</code>；实际状态写入和区域位移仍由画布控制器编排。</td>
+      </tr>
+      <tr>
+        <td>事务边界</td>
+        <td>部分完成</td>
+        <td>画布操作作用域、操作编号和操作元数据归一化已集中到 <code>infrastructure/transaction/canvas-operation.ts</code>；具体业务编排仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形层级领域规则</td>
+        <td>部分完成</td>
+        <td>新增图形的层级分配及置顶、置底更新计划已迁入 <code>domain/services/z-index-service.ts</code>；实际图形更新和事件同步仍由画布控制器编排。</td>
+      </tr>
+      <tr>
+        <td>选择状态规则</td>
+        <td>部分完成</td>
+        <td>删除后的选择结果计算已迁入 <code>domain/services/selection-service.ts</code>；选择仓库的清空和写回仍由画布控制器执行。</td>
+      </tr>
+      <tr>
+        <td>关系差异规则</td>
+        <td>部分完成</td>
+        <td>关系快照、增删差异和同一子图形的关系替换识别已迁入 <code>domain/services/relation-service.ts</code>；关系事件发送仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形创建准入</td>
+        <td>部分完成</td>
+        <td>图类型支持、区域重叠和区域内起始图形唯一性校验已迁入 <code>domain/services/shape-creation-service.ts</code>；图形写入和创建关系编排仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形更新计划</td>
+        <td>部分完成</td>
+        <td>图形属性补丁到批量更新项的计划生成，以及单图形属性更新入口复用已迁入 <code>domain/services/shape-update-service.ts</code>；实际更新、权限校验、连线同步和事件发送仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>快照目标归一化</td>
+        <td>部分完成</td>
+        <td>快照目标编号的去重和归一化已迁入 <code>infrastructure/transaction/snapshot-target.ts</code>；仓库读取和变更记录仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>连线新增执行</td>
+        <td>部分完成</td>
+        <td>连线端点存在确认、仓库写入和新增事件回调已迁入 <code>canvas/commands/add-line-command.ts</code>；应用层准入命令已新增到 <code>application/commands/create-line-command.ts</code>，工具层、快速连接、插入图形和剪贴板粘贴入口已接入，远程回放和快照恢复仍保留底层直接写入。</td>
+      </tr>
+      <tr>
+        <td>连线更新执行</td>
+        <td>部分完成</td>
+        <td>连线读取、更新和更新事件载荷组装已迁入 <code>canvas/commands/update-line-command.ts</code>；应用层准入命令已新增到 <code>application/commands/update-line-command.ts</code>，工具层、端点重连、控制点拖拽和连线文本编辑入口已接入，批量属性更新等组合入口仍待收口。</td>
+      </tr>
+      <tr>
+        <td>连线删除执行</td>
+        <td>部分完成</td>
+        <td>连线删除、选择同步和删除事件回调已迁入 <code>canvas/commands/delete-line-command.ts</code>；应用层准入命令已新增到 <code>application/commands/delete-line-command.ts</code>，并由删除选择上下文接入快捷键和上下文工具栏，底层回滚等内部补偿操作继续直接执行。</td>
+      </tr>
+      <tr>
+        <td>连线批量平移执行</td>
+        <td>部分完成</td>
+        <td>连线去重、端点忽略、点位平移和更新载荷生成已迁入 <code>canvas/commands/shift-lines-command.ts</code>；事务边界和业务触发仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>连线批量属性更新</td>
+        <td>部分完成</td>
+        <td>连线属性补丁合并、无效编号过滤和更新事件载荷生成已迁入 <code>canvas/commands/update-lines-property-command.ts</code>；批量准入已新增到 <code>application/commands/update-lines-property-command.ts</code> 并接入上下文工具栏，事务边界仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形新增执行</td>
+        <td>部分完成</td>
+        <td>图形仓库写入、创建关系回调和创建事件回调已迁入 <code>canvas/commands/add-shape-command.ts</code>；准入、层级和事务边界仍由画布控制器负责，单图形区域扩展已迁入 <code>canvas/commands/apply-single-region-expansion-command.ts</code>。</td>
+      </tr>
+      <tr>
+        <td>图形更新执行</td>
+        <td>部分完成</td>
+        <td>图形仓库更新和更新事件载荷组装已迁入 <code>canvas/commands/update-shape-command.ts</code>；单图形区域扩展已迁入 <code>canvas/commands/apply-single-region-expansion-command.ts</code>，连线同步和关系差异仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形批量更新执行</td>
+        <td>部分完成</td>
+        <td>批量图形逐项写入、已处理图形过滤和更新前快照收集已迁入 <code>canvas/commands/update-shapes-command.ts</code>；批量扩展、连线同步和事件发布仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>包含关系写入执行</td>
+        <td>部分完成</td>
+        <td>包含关系仓库写入、旧关系删除、新关系创建和关联连线同步回调已迁入 <code>canvas/commands/set-containment-relation-command.ts</code>；准入校验和事务边界仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>功能图节点数据清理</td>
+        <td>部分完成</td>
+        <td>功能图节点业务管理字段的清理计算已迁入 <code>domain/services/shape-update-service.ts</code>；实际图形更新和事件同步仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>图形批量变更上下文</td>
+        <td>部分完成</td>
+        <td>区域扩展、批量图形写入、连线同步、事件发布和关联连线更新的执行顺序已集中到 <code>canvas/commands/shape-batch-mutation-command.ts</code>；具体能力仍由画布控制器提供适配。</td>
+      </tr>
+      <tr>
+        <td>区域联动移动执行</td>
+        <td>部分完成</td>
+        <td>区域位移、子图形联动和区域内连线平移计划已迁入 <code>domain/services/move-service.ts</code>，移动用例编排已迁入 <code>canvas/commands/move-shapes-command.ts</code>；事务边界仍由画布控制器负责。</td>
+      </tr>
+      <tr>
+        <td>批量变更单图形更新</td>
+        <td>部分完成</td>
+        <td>批量流程中的单图形写入、更新快照和几何变化连线同步已迁入 <code>canvas/commands/apply-shape-update-command.ts</code>；批量上下文继续负责整体顺序。</td>
+      </tr>
+      <tr>
+        <td>关联连线同步执行</td>
+        <td>部分完成</td>
+        <td>连线端点图形读取、几何重建、仓库写入和更新事件回调已迁入 <code>canvas/commands/sync-connected-line-command.ts</code>；触发时机仍由图形批量变更上下文协调。</td>
+      </tr>
+      <tr>
+        <td>区域扩展批量执行</td>
+        <td>部分完成</td>
+        <td>区域目标范围计算、重叠推移、区域更新和子图形更新编排已迁入 <code>canvas/commands/apply-region-expansion-command.ts</code>；批量变更上下文仍负责统一提交。</td>
+      </tr>
+      <tr>
+        <td>批量关联连线同步</td>
+        <td>部分完成</td>
+        <td>统一平移、双端连线平移和单端连线重建的分支编排已迁入 <code>canvas/commands/sync-batch-connected-lines-command.ts</code>；批量变更上下文继续负责调用时机。</td>
+      </tr>
+      <tr>
+        <td>无模板交互组件</td>
+        <td>已完成</td>
+        <td>全屏层已改为 <code>useFullscreenController</code>，由画布组件负责装配。</td>
+      </tr>
+      <tr>
+        <td>生产路由与调试构建隔离</td>
+        <td>暂缓</td>
+        <td>按当前迁移决策暂不拆分生产路由和调试构建，后续单独处理。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="phase2-line-plan">阶段二剩余执行计划：连线应用命令化</h3>
+    <p>本节是阶段二连线应用命令化的执行依据。本节事项完成后，阶段三的图完整性校验、负责人提交态影响分析及其单测附录仍不得提前实现，须另行评审后再启动。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>顺序</th>
+        <th>任务</th>
+        <th>权限与前置判断</th>
+        <th>允许的底层职责</th>
+        <th>完成标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>1</td>
+        <td>连线创建应用命令</td>
+        <td>UI 入口完成图类型和编辑权限判断；应用命令完成端点存在性和重复关系前置判断。</td>
+        <td>执行已确认的连线写入、事件发送和事务内状态同步。</td>
+        <td>工具层、快速连接和插入图形等入口不再直接以业务意图调用底层新增连线接口。</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>连线更新应用命令</td>
+        <td>UI 入口完成编辑权限判断；应用命令完成连线存在性和变更类型判断，几何变更不得绕过应用命令。</td>
+        <td>执行已确认的端点、路径点或属性更新，以及必要的事件和同步。</td>
+        <td>连线绘制、端点重连、属性编辑等入口统一经过应用层更新命令。</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>连线删除应用命令</td>
+        <td>UI 入口完成编辑权限判断；应用命令完成连线存在性和当前选择状态处理。</td>
+        <td>执行已确认的删除、选择清理和删除事件发送。</td>
+        <td>快捷键、工具栏和批量删除入口不再直接承担连线删除准入。</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>调用方与事务边界收口</td>
+        <td>权限只在 UI 交互入口判断；应用命令和底层执行器不重复判断，组合操作沿用外层事务。</td>
+        <td>迁移期间画布控制器暂保留领域服务适配、事务编排和已确认变更的执行；阶段收口时必须移除。</td>
+        <td>补充应用命令单测，并完成类型检查与 ICCE Vitest 回归。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      阶段二完成判定：图形创建、图形更新、图形移动、图形删除以及连线创建、连线更新、连线删除均具备应用层命令入口；所有用户意图在 UI 入口先完成权限判断，再进入应用命令。
+    </div>
+    <div class="note">
+      当前权限判定在 UI 交互入口完成，应用命令不接收调用方注入的权限策略；协作协议继续按当前直接载荷回放决策执行，事务内事件顺序由批量变更命令统一维护。
+    </div>
+  </div>
+
+  <h2 id="phase3-execution">阶段三执行记录</h2>
+  <div class="section">
+    <div class="warning">
+      阶段三已完成。本节保留阶段三执行记录；阶段四当前仅执行控制器职责拆分，hydration 深化、事务记录和历史回放均暂不启动。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>批次</th>
+        <th>执行内容</th>
+        <th>完成标准</th>
+        <th>当前状态</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>三-一</td>
+        <td>验证类型、纯规则和验证服务归位</td>
+        <td>规则不依赖画布控制器、状态仓库或组件；服务负责图类型分流、上下文归一化和命中点收集。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>三-二</td>
+        <td>新增 <code>ValidateDiagram</code> 应用命令</td>
+        <td>只读返回验证报告，不写入状态，不创建事务标识。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>三-三</td>
+        <td>提交态影响分析接入移动、删除和协作变更前置</td>
+        <td><code>findOwnersToReset</code> 结果进入命令/事务结果，提交态失效与普通图形变更可区分。</td>
+        <td>已完成</td>
+      </tr>
+      <tr>
+        <td>三-四</td>
+        <td>完成 T1 至 T12 并回归</td>
+        <td>阶段三清单全部通过；阶段四仍保持冻结。</td>
+        <td>已完成</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      本轮已完成领域层校验类型、规则消息、纯规则访问器、共享区域索引和规则注册表实现的归位；原 <code>canvas/validation/</code> 目录下的校验兼容出口已删除。数据解析已迁入画布基础设施适配目录，作为接口与状态仓库的边界。按约定跳过依赖 ICCE 目录外浏览器运行时的形状仓库用例后，相关回归为 89 个测试文件通过、284 个测试通过。阶段三 T1 至 T12 已完成，阶段四已开始执行控制器职责拆分。
+    </div>
+  </div>
+
+  <h2 id="phase4-plan">阶段四执行计划</h2>
+  <div class="section">
+    <div class="warning">
+      阶段四已启动，当前执行四-二。本阶段的首要目标不是继续堆叠控制器能力，而是让 <code>canvas/core/canvas-controller.ts</code> 退场；在控制器职责完成拆分前，不启动 hydration 深化、事务记录、历史回放或撤销重做。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>批次</th>
+        <th>执行内容</th>
+        <th>完成标准</th>
+        <th>进入条件</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>四-一</td>
+        <td>画布控制器职责盘点与边界冻结</td>
+        <td>将查询、图形变更、连线变更、关系维护、事务编排、事件同步、恢复写入分别列出，并禁止继续向控制器新增业务职责。</td>
+        <td>阶段三已完成。</td>
+      </tr>
+      <tr>
+        <td>四-二</td>
+        <td>应用命令与基础设施适配迁移</td>
+        <td>用户意图通过应用命令进入，状态写入、事件发送和协作同步由基础设施适配层承接；控制器只保留尚未迁移的装配逻辑。</td>
+        <td>四-一完成并通过调用链回归。</td>
+      </tr>
+      <tr>
+        <td>四-三</td>
+        <td>控制器移除</td>
+        <td>生产调用方不再依赖控制器；控制器不得转化为应用门面、组合根或兼容入口，四-三完成时必须删除其生产代码和导出。</td>
+        <td>四-二完成，所有主要入口完成迁移。</td>
+      </tr>
+      <tr>
+        <td>四-四</td>
+        <td>恢复与事务能力接入</td>
+        <td>在控制器退场后，再统一接入 hydration、事务记录、协作回放和历史能力；每项能力均通过应用命令和基础设施适配进入。</td>
+        <td>四-三完成，且存在明确的历史或回放需求。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      阶段四完成判定：控制器不再承载跨层业务编排；应用命令、领域服务、事务边界和基础设施适配职责清晰；恢复、协作和历史能力均可在不重新扩张控制器职责的前提下接入。
+    </div>
+    <div class="note">
+      当前进度：四-一已完成首批生命周期拆分，清空与快照恢复已迁入 <code>infrastructure/adapters/diagram-snapshot-adapter.ts</code>，生命周期组合直接使用该适配器；<code>CanvasController</code> 仅作为迁移过渡保留，待主要变更入口迁移完成后必须移除。
+    </div>
+    <div class="note">
+      四-二进度：事务边界与快照记录已集中到 <code>infrastructure/transaction/canvas-operation.ts</code>；快速添加、插入图形、粘贴、拖拽创建、自动补区域、上下文操作、选区图层和工具上下文已完成首批事务入口迁移，控制器中的快照记录方法已删除。图形、连线和关系的变更记录及事件发布已迁入 <code>infrastructure/adapters/event-adapter.ts</code>，移动与删除命令上下文暂保留在调用编排处，后续直接迁移底层变更执行与写入职责。
+    </div>
+    <div class="note">
+      四-二本轮完成：事务变更聚合实现已从 <code>canvas/core/operation-sync.ts</code> 迁入 <code>infrastructure/transaction/operation-sync.ts</code>；事务适配器、事件适配器和控制器仅通过基础设施事务入口访问该能力。旧的 core 路径引用已清理，未启动阶段四-三，也未触碰 ICCE 目录之外代码。
+    </div>
+    <div class="note">
+      四-二后续批次完成：连线新增、更新、删除、批量属性更新和批量平移的仓库写入、事件发布及删除后的选择同步已集中到 <code>canvas/commands/line-mutation-adapter.ts</code>；<code>CanvasController</code> 仅暂保留事务与执行过渡入口，最终不得保留公开兼容入口。类型检查已通过；Vitest 回归因当前环境未安装 Vitest 暂待补跑。下一批继续迁移图形变更与包含关系执行职责，完成前不进入阶段四-三。
+    </div>
+    <div class="note">
+      四-二当前批次完成：图形新增和单图形更新的基础仓库写入与事件发布已集中到 <code>canvas/commands/shape-mutation-adapter.ts</code>；区域扩展、包含关系解析、关系差异和连线联动仍由控制器负责，作为下一批组合编排迁移对象。原有公开接口和调用方暂不改变，类型检查已通过；Vitest 仍待补齐当前环境依赖后回归。
+    </div>
+    <div class="note">
+      四-二关系批次完成：包含关系的仓库写入、关系事件发布和关联连线同步已集中到 <code>canvas/commands/containment-mutation-adapter.ts</code>；<code>setParent</code> 的图类型准入、循环关系校验和事务边界仍由控制器入口负责。下一批继续迁移图形组合变更编排，完成后再进入阶段四-三。
+    </div>
+    <div class="note">
+      四-二组合批次完成：批量图形变更的临时快照、已处理集合、批量结果和待处理连线更新已集中到 <code>canvas/commands/shape-batch-mutation-adapter.ts</code>；区域扩展、连线联动和关系差异仍通过显式回调接入，控制器不再直接管理批量执行上下文。类型检查已通过，下一步继续评估移动/删除组合编排的迁移边界。
+    </div>
+    <div class="note">
+      四-二移动批次完成：移动命令的图形/连线查询、包含范围解析和受影响连线收集已集中到 <code>canvas/commands/move-shapes-mutation-adapter.ts</code>；移动准入、事务边界和批量图形变更仍由应用命令与控制器组合入口负责。类型检查已通过，下一步处理删除选择组合编排。
+    </div>
+    <div class="note">
+      四-二删除批次完成：删除选择的事务连接、连线删除准入、图形级联删除和选择清理已集中到 <code>canvas/commands/delete-selection-mutation-adapter.ts</code>；删除树计算与底层状态写入仍由控制器和删除执行命令负责。阶段四-二主要组合入口已完成首轮抽薄，下一步进行调用链清理与控制器职责复盘，再决定是否进入阶段四-三。
+    </div>
+    <div class="note">
+      四-二事务命名收口已完成：基础设施事务入口已由 <code>runInCanvasOperation</code> 重命名为 <code>runCanvasTransaction</code>，控制器调用已同步调整；工具上下文和测试中的 <code>runInOperation</code> 属于应用命令上下文协议，保留该名称以区分两层职责。类型检查已通过，未引入历史记录或撤销重做。
+    </div>
+    <div class="note">
+      四-二调用链复盘结论：连线、图形、包含关系、批量移动和删除选择的执行上下文已完成首轮抽薄，但生产入口仍有工具、弹窗、快捷操作和组件直接依赖 <code>CanvasController</code> 的公开变更方法；因此阶段四-三暂不启动。下一轮应优先为这些调用方提供统一应用层变更门面，再逐步移除控制器业务方法依赖。
+    </div>
+    <div class="note">
+      四-三前置批次完成：新增 <code>application/canvas-mutation-facade.ts</code>，统一承接工具层的图形/连线创建、图形更新、批量更新和移动准入，并将 <code>tool-context.ts</code> 的画布变更入口切换到该门面；控制器仅作为迁移过渡执行端保留，最终必须移除，不得改造成兼容执行端。类型检查已通过，下一批继续迁移弹窗、快捷操作和组件中的直接控制器调用。
+    </div>
+    <div class="note">
+      四-三前置弹窗批次完成：<code>useCanvasDialogBridge.ts</code> 已改用 <code>application/canvas-mutation-facade.ts</code> 处理节点更新、预览提交和节点管理字段更新，弹窗层不再直接依赖 <code>CanvasController</code>。类型检查已通过，下一批继续迁移快捷操作和图形组件中的直接调用。
+    </div>
+    <div class="note">
+      四-三前置组件批次完成：新增 Vue 组合式入口 <code>canvas/composables/useCanvasMutationFacade.ts</code>，连线文本、连线控制点、图形富文本渲染和选区图层已切换到应用层门面；组件层不再直接调用 <code>CanvasController</code> 的图形/连线变更方法。类型检查已通过，下一批继续处理快捷键、上下文工具和拖拽创建入口。
+    </div>
+    <div class="note">
+      四-三前置快捷操作批次完成：<code>useKeyboardShortcuts.ts</code> 的粘贴、剪切和删除选择，以及 <code>useDragCreateController.ts</code> 的拖拽新增已切换到应用层画布变更门面；快捷操作和拖拽创建不再直接依赖 <code>CanvasController</code>。类型检查已通过，下一批继续迁移上下文工具和插入/快速添加命令。
+    </div>
+    <div class="note">
+      四-三前置上下文批次完成：上下文工具的删除、属性更新、层级调整和箭头切换，以及快速添加和插入图形的新增/回滚入口已切换到应用层画布变更门面；插入命令保留连线应用命令的显式准入。类型检查已通过，下一批继续清理自动区域、快照应用和剩余生产控制器引用。
+    </div>
+    <div class="note">
+      四-三前置恢复批次完成：自动补区域和区域内容快照应用已切换到应用层画布变更门面，保留原有事务、区域归属和失败补偿行为。类型检查已通过；当前剩余生产直接引用集中在拖拽会话、Stage 事件兼容入口和应用门面内部，下一步处理拖拽会话与 Stage 事件边界。
+    </div>
+    <div class="note">
+      四-三前置事件批次完成：拖拽会话已通过应用层门面执行移动和包含关系刷新，<code>useStageEvents.ts</code> 不再向工具能力工厂注入 <code>CanvasController</code>；控制器直接引用已收敛到应用门面及少量类型兼容层。类型检查已通过，下一步进行最终生产调用链扫描和控制器退场准入评审。
+    </div>
+    <div class="note">
+      阶段四-三退场准入评审完成：生产业务层已无散落的 <code>CanvasController</code> 运行时调用，剩余引用仅位于应用层门面内部的集中执行依赖、工具上下文类型兼容层以及测试/文档。控制器暂不删除；下一阶段应将应用门面内部执行回调继续下沉到统一 <code>canvas-mutation-gateway</code>，完成后再移除控制器公开业务入口。
+    </div>
+    <div class="note">
+      阶段四-三网关批次完成：新增 <code>infrastructure/adapters/canvas-mutation-gateway.ts</code>，应用层门面已改为通过统一网关访问画布变更执行入口；控制器运行时依赖已集中到网关，工具上下文仅保留类型兼容引用。类型检查已通过，下一步将网关接口与控制器剩余职责逐项对齐，准备移除控制器公开业务入口。
+    </div>
+    <div class="note">
+      阶段四-三契约批次完成：<code>CanvasMutationCapability</code> 已改为由应用门面返回值推导，<code>tool-context.ts</code> 不再导入 <code>CanvasController</code> 类型；控制器依赖进一步收敛为统一网关内部实现。类型检查已通过，下一步继续拆分网关背后的控制器组合职责，暂不删除控制器文件。
+    </div>
+    <div class="note">
+      阶段四-三契约修正完成：为避免门面返回值递归推导导致参数隐式 <code>any</code>，已新增显式 <code>CanvasMutationFacade</code> 契约并让工具上下文直接引用该契约；应用门面实现和网关接口保持独立。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三网关契约完成：<code>CanvasMutationGateway</code> 已显式定义新增、更新、移动、删除、关系和属性变更执行入口，应用门面通过该契约接入。后续可替换网关底层执行实现而不改动工具、弹窗和快捷操作调用方。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三职责下沉批次完成：删除选择上下文的事务连接、连线删除准入和选择清理已迁入 <code>canvas-mutation-gateway.ts</code>；<code>CanvasController</code> 中的 <code>runInOperation</code> 与 <code>createDeleteSelectionCommandContext</code> 已移除。类型检查已通过，下一批继续下沉其它组合入口。
+    </div>
+    <div class="note">
+      阶段四-三属性批次完成：图形属性补丁规划与单图形更新已迁入 <code>canvas-mutation-gateway.ts</code>，<code>CanvasController.updateShapeProperty</code> 已移除，应用门面直接复用网关入口。类型检查已通过，下一批继续下沉其它低风险兼容方法。
+    </div>
+    <div class="note">
+      阶段四-三属性组合批次完成：批量图形属性更新、置顶/置底和连线属性更新已迁入 <code>canvas-mutation-gateway.ts</code>，控制器中的 <code>updateShapesProperty</code>、<code>bringShapesToFront</code>、<code>sendShapesToBack</code> 和 <code>updateLineProperty</code> 已移除。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三关系入口批次完成：包含关系公开入口已迁入 <code>canvas-mutation-gateway.ts</code>，网关保留关系事件动作归一化、关联连线同步和事务边界；<code>CanvasController.setContainmentRelation</code> 已移除，控制器内部仅保留私有关系执行逻辑供 <code>setParent</code> 和创建流程使用。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三父子关系批次完成：<code>setParent</code> 的图形存在性、循环关系准入、事务、关系写入和父节点业务字段清理已迁入 <code>canvas-mutation-gateway.ts</code>；控制器公开 <code>setParent</code> 已移除，创建与重排流程改用私有关系执行方法。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三连线批量批次完成：<code>updateLinesProperty</code> 已迁入 <code>canvas-mutation-gateway.ts</code>，直接复用连线变更适配器和事务入口；<code>CanvasController.updateLinesProperty</code> 已移除。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三连线基础批次进行中：网关中的连线新增已改为直接使用连线变更适配器，保留端点存在校验、事务和创建事件；<code>CanvasController.addLine</code> 暂作为兼容方法保留，待连线更新与删除入口一并迁移后统一清理。类型检查已通过。
+    </div>
+    <div class="note">
+      阶段四-三连线基础批次完成：网关中的连线新增、更新和删除已直接使用连线变更适配器，保留端点校验、事务、选择同步及连线事件；<code>CanvasController.addLine</code>、<code>updateLine</code> 和 <code>removeLine</code> 暂作为兼容方法保留，待调用面清理后统一移除。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图形属性批次完成：<code>updateShapeProperty</code> 已在网关内直接执行属性补丁、事务和图形更新事件，不再转发至 <code>CanvasController.updateShape</code>；控制器兼容入口保持不变，待图形批量更新和几何联动职责完成迁移后再统一清理。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图形批量属性批次完成：<code>updateShapesProperty</code> 已在网关内直接复用批量变更命令，保留批量结果、事务和 <code>SHAPES_UPDATED</code> 事件，不再转发至 <code>CanvasController.updateShapes</code>；属性批次不触发几何扩展和连线联动。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图层排序批次完成：<code>bringShapesToFront</code> 与 <code>sendShapesToBack</code> 已在网关内直接执行 z-index 批量规划和批量变更命令，保留事务与 <code>SHAPES_UPDATED</code> 事件，不再转发至 <code>CanvasController.updateShapes</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三连线属性批次完成：<code>updateLineProperty</code> 已在网关内直接复用连线属性规划和连线变更适配器，保留事务与 <code>LINE_UPDATED</code> 事件，不再转发至 <code>CanvasController.updateLine</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图形删除批次完成：<code>removeShapes</code> 已在网关内直接执行包含关系删除规划、图形/连线清理、孤儿节点刷新、选择同步、删除事件和关系差异事件，不再转发至 <code>CanvasController.removeShapes</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三删除上下文收口完成：删除选择上下文的图形和连线删除回调已统一指向 <code>canvasMutationGateway</code>，删除组合路径不再回调 <code>CanvasController.removeShapes/removeLine</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三包含关系刷新批次完成：<code>refreshFunctionContainment</code> 已在网关内直接执行功能图顶层候选收集、嵌套关系刷新和事务边界，并通过网关 <code>setParent</code> 写入关系；不再转发至 <code>CanvasController.refreshFunctionContainment</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三移动执行批次完成：<code>moveShapesWithStrategy</code> 已在网关内直接组合移动命令、移动上下文、批量图形更新和连线更新，并保留已有事务嵌套处理；不再转发至 <code>CanvasController.moveShapesWithStrategy</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图形新增批次完成：<code>addShape</code> 已在网关内直接执行图形准入、z-index、区域扩展、图形写入、功能图嵌套/区域关系解析及关系事件；不再转发至 <code>CanvasController.addShape</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="note">
+      阶段四-三图形更新批次完成：<code>updateShape</code> 已在网关内直接执行区域扩展、图形更新、几何变更后的连线同步和关系差异事件，并保留 <code>skipRelationDiff</code> 与区域扩展参数语义；不再转发至 <code>CanvasController.updateShape</code>。类型检查与差异校验已通过。
+    </div>
+    <div class="decision">
+      阶段四-三职责盘点调整：暂停继续将 <code>CanvasController</code> 入口平移到 <code>canvas-mutation-gateway.ts</code>。当前网关已达到 700 行级别，同时承载事务、准入、区域扩展、包含关系、删除级联、移动策略、模型写入、事件和选择同步，继续迁移会形成第二个巨型控制器。后续先按职责拆分为 <code>shape-mutation-service</code>（新增/更新及区域扩展组合）、<code>shape-deletion-service</code>（删除规划/级联/孤儿刷新）、<code>shape-move-service</code>（移动策略及受影响连线）、<code>shape-containment-service</code>（父子关系准入/刷新/关系事件）和 <code>shape-creation-service</code>（新增准入与创建关系解析）；网关只保留稳定组合接口和基础设施调用，不再新增对象级入口。
+    </div>
+    <div class="decision">
+      架构基线冻结：后续不再按对象类型把控制器方法继续搬入网关，也不机械新增一组与对象同名的 service。最终统一采用“按用例拆分、按基础设施能力收口”的结构：<code>UI / Tool -&gt; Application Use Case -&gt; Domain Planner / Rule -&gt; Mutation Runtime -&gt; Store + Event + Transaction</code>。其中 Application Use Case 组织一次完整用例和事务，Domain Planner / Rule 只负责准入、变更计划和影响范围计算，Mutation Runtime 只负责基础写入、事件接线和事务参与；区域扩展、包含关系、删除级联和移动策略不得继续进入 Mutation Runtime。
+    </div>
+    <div class="note">
+      阶段四-三后续实施顺序已调整：先冻结当前迁移中间态并完成文档基线；再以“新增图形、更新图形、删除选择、移动选择”四个 Application Use Case 逐条拆分，分别提取领域规划和组合命令；每完成一个用例即删除对应的 CanvasController 业务调用链。Mutation Runtime 仅保留基础写入协议，薄网关不是强制层，若仅有参数转发则直接合并到基础设施 adapter；在四个用例完成前，不继续迁移新的控制器入口。
+    </div>
+    <div class="note">
+      新增图形用例盘点完成：UI 创建入口负责图形拖拽权限判断，应用门面只负责调用用例；<code>shape-creation-service.ts</code> 负责图形准入规则；区域扩展由应用命令与区域布局规则共同完成；图形写入、图形创建事件和关系事件属于 Mutation Runtime 基础能力。
+    </div>
+    <div class="plan">
+      <h4>下一步计划：创建图形用例拆分</h4>
+      <ol>
+        <li><strong>定义用例契约</strong>：新增 <code>create-shape-use-case</code> 的输入、准入结果、创建结果和失败语义，明确权限前置由应用层负责，图形准入由领域规则负责。</li>
+        <li><strong>定义 Mutation Runtime 原子能力</strong>：只保留图形写入、关系写入、图形/关系事件发布和事务参与；禁止出现区域扩展、嵌套候选、删除级联或移动策略方法。</li>
+        <li><strong>迁移创建组合逻辑</strong>：将 z-index、区域扩展、功能图嵌套候选、区域归属、父节点业务字段清理从 <code>canvas-mutation-gateway.ts</code> 移入创建用例及其领域规划器。</li>
+        <li><strong>保留行为顺序</strong>：准入 → 事务开始 → 区域扩展 → 图形写入 → 创建关系 → 父节点字段清理 → 图形/关系事件发布；任何失败均保持原返回值和状态不变。</li>
+        <li><strong>切换调用方</strong>：应用门面和拖拽/插入/快速添加/自动区域等创建调用统一进入创建用例，不再直接调用网关的业务型 <code>addShape</code>。</li>
+        <li><strong>删除旧路径</strong>：创建用例稳定后，移除网关中的创建业务编排，再清理 <code>CanvasController.addShape</code> 兼容入口。</li>
+      </ol>
+      <p>本计划的完成条件：创建用例拥有唯一业务编排入口；Mutation Runtime 不包含创建规则；现有创建、区域扩展、嵌套关系和事件顺序行为保持一致；类型检查、差异校验和相关 Vitest 回归均通过。</p>
+    </div>
+    <div class="decision">
+      创建用例契约补充：<code>application/commands/create-shape-command.ts</code> 不接收用户权限回调，只处理创建计划、事务、写入和事实事件；结构准入由领域服务负责，交互权限由 UI 创建入口负责。
+    </div>
+    <table>
+      <thead><tr><th>创建用例边界</th><th>职责</th><th>禁止</th></tr></thead>
+      <tbody>
+        <tr><td>输入</td><td>图形、创建选项、操作元数据。</td><td>不接受 Store、EventBus 或控制器实例。</td></tr>
+        <tr><td>应用层</td><td>权限前置、事务边界、调用结果转换。</td><td>不实现区域扩展或父子关系规则。</td></tr>
+        <tr><td>领域层</td><td>图形准入、z-index、区域扩展计划和创建关系计划。</td><td>不直接写 Store，不发布基础设施事件。</td></tr>
+        <tr><td>Mutation Runtime</td><td>图形/关系原子写入、事件发布和当前事务参与。</td><td>不决定创建关系、不计算区域扩展、不承担权限。</td></tr>
+        <tr><td>输出</td><td>创建成功/失败、实际创建图形、受影响图形和关系变更结果。</td><td>不返回未经定义的 Store 内部对象。</td></tr>
+      </tbody>
+    </table>
+    <div class="decision">
+      架构收口决策：当前新增的 <code>line-mutation-adapter</code>、<code>shape-mutation-adapter</code> 等文件仅属于阶段四迁移期的接线层，不代表最终架构。后续禁止继续按图形、连线、关系、区域等对象类型无限新增平行 adapter；先将业务编排归位到职责明确的领域服务/组合命令，再将仅剩的 store 写入、事件发布和协作接线收敛到薄的 <code>canvas-mutation-gateway</code>。
+    </div>
+    <div class="decision">
+      薄封装收口规则：迁移期 adapter 可以暂时保留，但不得作为最终分层。具有独立职责、稳定接口或独立测试价值的应用门面、领域服务、复杂组合命令和画布变更网关可以保留；仅做参数转发、只有单一调用方、没有独立规则且不增加语义的 adapter，应在调用方迁移完成后合并或删除。最终禁止形成 <code>facade -&gt; adapter -&gt; command -&gt; controller -&gt; store</code> 的重复转发链，目标调用链应收敛为应用门面、领域服务/命令、统一画布变更网关和基础设施存储/事件层。
+    </div>
+    <div class="note">
+      执行要求：冻结继续把控制器入口平移到 <code>canvas-mutation-gateway</code>；先完成网关职责盘点以及图形变更、删除、移动、包含关系和创建服务的拆分设计，再按“保留、归位、合并、删除”分类处理现有 adapter，最后进入阶段四-三控制器兼容方法移除验收。该收口不引入历史记录、撤销重做或新的协作协议字段。
+    </div>
+    <h3 id="phase4-final-boundary">阶段四最终分层边界</h3>
+    <p>最终调用链统一收敛为：</p>
+    <pre><code>UI / Tool
+  -> application command
+  -> domain service / composite command
+  -> thin canvas-mutation-gateway
+  -> store + event adapter + transaction infrastructure</code></pre>
+    <table>
+      <thead>
+      <tr>
+        <th>层级</th>
+        <th>职责</th>
+        <th>禁止事项</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>application command</td>
+        <td>表达用户意图、权限前置判断、组织一次用例和事务上下文。</td>
+        <td>不直接操作 store，不实现几何或包含关系规则。</td>
+      </tr>
+      <tr>
+        <td>domain service</td>
+        <td>执行纯规则计算，生成校验结果、变更计划和影响范围。</td>
+        <td>不依赖 Vue、Pinia、事件总线或协作连接。</td>
+      </tr>
+      <tr>
+        <td>domain service / composite command</td>
+        <td>按职责拆分图形新增/更新、删除、移动、包含关系和创建关系流程，生成计划并编排一次用例内的业务顺序。</td>
+        <td>不直接写 store，不发布基础设施事件，不重新形成单一巨型组合服务。</td>
+      </tr>
+      <tr>
+        <td>infrastructure canvas-mutation-gateway</td>
+        <td>提供稳定的基础设施写入、事件发布和事务接线能力，作为领域服务与 store/event adapter 之间的薄组合层。</td>
+        <td>不承载权限、区域扩展、删除级联、移动策略、父子关系编排等业务职责，不继续增加对象级迁移入口。</td>
+      </tr>
+      <tr>
+        <td>CanvasController</td>
+        <td>迁移期间暂提供过渡入口；阶段四-三完成时必须移除，不得保留兼容入口、组合根或应用门面。</td>
+        <td>不得继续承载跨层业务编排、规则判断和基础设施细节。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="warning">
+      阶段四-三收口要求：在进入阶段四-四前，必须完成现有迁移期 adapter 的归并评审，并先完成网关职责拆分。具有独立业务职责的 adapter/command 应归位到对应领域服务；仅负责 store 写入、事件发布或协作接线的基础设施适配器才允许并入薄网关。不得以“迁移方便”为理由把临时 adapter 固化为新的巨型领域边界。
+    </div>
+  </div>
+
+  <h2 id="conclusion">9. 结论</h2>
+  <div class="section">
+    <p>ICCE 现有实现有分层基础，当前重点是把边界继续收紧。方案采用保守迁移、持续收敛的策略，先让系统朝目标架构移动，再逐步替换旧形态。</p>
+    <div class="decision">
+      最终目标是让每一层只做自己该做的事。
+    </div>
+    <h3>预期收益</h3>
+    <ul>
+      <li>控制器收敛，新增功能更容易归位。</li>
+      <li>领域、UI、协作边界更清晰，测试更好组织。</li>
+      <li>调试与生产隔离后，维护成本下降。</li>
+    </ul>
+    <h3>风险提示</h3>
+    <ul>
+      <li>阶段切分过粗会放大回归风险。</li>
+      <li>一次性搬迁目录会让调用方同时适配多个变化点。</li>
+      <li>领域规则没先沉淀成可测服务，复杂度只会扩散。</li>
+    </ul>
+    <h3>验收口径</h3>
+    <ul>
+      <li>生产构建不再依赖调试与示例页面。</li>
+      <li>查询、协作、阶段编排、领域服务和事务边界可清楚描述。</li>
+      <li>关键迁移点有单测或回归验证。</li>
+      <li>新功能能自然落入目标目录树。</li>
+    </ul>
+  </div>
+
+  <h2 id="appendix-v02">附录：v0.2 评审补丁</h2>
+  <div class="section">
+    <p>本附录针对 v0.1 评审中暴露的几处边界模糊点，逐一补强。后续迁移以本附录为优先依据，未在本附录中改写的内容沿用 v0.1 表述。</p>
+    <div class="note">
+      附录定位：只补 v0.1 中没说清、容易在落地时走样的条款，不重写 v0.1 的目录树、阶段切分和停止条件。
+    </div>
+
+    <h3 id="appendix-rules-services">1. 规则与服务边界</h3>
+    <p>v0.1 把"图类型差异、嵌套限制"放到 <code>domain/rules/</code>，又把 ContainmentService、RegionLayoutService、DiagramPolicyService 放到 <code>domain/services/</code>。两个层级之间没有显式分工，容易出现同一判定在两处重复实现。</p>
+    <div class="decision">
+      <code>domain/rules/</code> 只放纯判定函数：输入领域对象 + 上下文，输出布尔或枚举，不产生任何变更，不引用服务。
+      <code>domain/services/</code> 负责调用规则、拼装结果、组织领域对象之间的协作，必要时为命令层准备"决策对象"或"变更前置清单"。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>问题类型</th>
+        <th>放哪</th>
+        <th>示例</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>某图类型是否允许某类节点存在</td>
+        <td><code>domain/rules/</code></td>
+        <td><code>canShapeExistInDiagram(diagramType, shapeType)</code></td>
+      </tr>
+      <tr>
+        <td>父子归属是否合法</td>
+        <td><code>domain/rules/</code></td>
+        <td><code>canSetContainment(parent, child, diagramType)</code></td>
+      </tr>
+      <tr>
+        <td>区域是否需要扩展、扩展多少</td>
+        <td><code>domain/services/region-layout.service.ts</code></td>
+        <td>组合多个规则计算扩展量并生成变更前置</td>
+      </tr>
+      <tr>
+        <td>归属变更的最终动作清单</td>
+        <td><code>domain/services/containment.service.ts</code></td>
+        <td>调用规则、合并判定、返回决策对象</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="warning">
+      一条经验法则：能用一行表达式说完的判定，放 rules；要拉多个对象做组合运算的，放 services。一旦 services 里出现"先判 true 再判 false"的复杂分支，优先把分支拆回 rules。
+    </div>
+
+    <h3 id="appendix-collab">2. 协作链路硬约束</h3>
+    <p>协作代码按职责拆分到 <code>infrastructure/collab/</code>、<code>infrastructure/adapters/</code>、<code>infrastructure/stores/</code> 和 <code>ui/collaboration/</code>，协议编码、消息调度、传输、状态回放与生命周期编排不得重新合并。</p>
+    <div class="decision">
+      当前实现决策：协作协议暂不改为命令式协议。现阶段消息继续携带实际图形、连线和包含关系数据，远端按图类型过滤后直接回放到本地状态；在协议升级为命令或操作描述之前，不引入 <code>source</code>、<code>transactionId</code> 等仅服务于命令式回放的元数据字段。上面的命令式协作约束作为后续演进目标，不作为当前迁移要求。
+    </div>
+    <ul>
+      <li><code>drag-message-codec.ts</code> 只按既有字段编码操作与选择载荷，并完成消息范围判定，不依赖 Vue、路由、WebSocket 或状态仓库。</li>
+      <li><code>drag-message-dispatcher.ts</code> 只负责实时消息节流、合并和提交前刷新，不感知页面、路由和传输实现。</li>
+      <li><code>ws-collab-transport.ts</code> 只封装现有消息发送、订阅与取消订阅，不直接写入画布状态。</li>
+      <li><code>canvas-replay-applier.ts</code> 是远端直接状态回放的唯一协作例外，必须保留按当前图类型过滤，不重跑本地业务推导。</li>
+      <li><code>ui/collaboration/useCollabSync.ts</code> 只编排生命周期、路由范围、选择广播和回放抑制，不直接依赖 WebSocket 状态宿主。</li>
+    </ul>
+    <div class="note">
+      若后续升级为命令式协作协议，应作为独立需求重新设计消息版本、兼容策略和回放事务；不得在当前直接回放协议上局部添加命令元数据，形成两套语义混用。
+    </div>
+    <div class="warning">
+      严禁在传输适配器里出现 <code>store.setXxx</code> 这样的直写调用。一旦发现，相关代码必须下沉到命令或领域服务。
+    </div>
+    <pre><code>// ui/collaboration/useCollabSync.ts
+const unsubscribe = transport.subscribeDrag((payload) =&gt; {
+  if (!isCollabDragPayloadForDiagram(payload, currentDiagramId)) return;
+  applyRemoteHandleData(payload.handleData);
+});</code></pre>
+
+    <h3 id="appendix-history">3. 事务与历史存储关系</h3>
+    <p>当前没有撤销重做、操作历史或服务端历史回放的实际需求，因此暂不创建操作记录器、历史存储和独立历史回放入口。以下内容仅作为未来需求出现时的分层预案。</p>
+    <div class="decision">
+      历史能力未落地前，不引入 <code>history-store</code>、<code>operation-recorder</code> 或 <code>transactionId</code>；当前仅使用 <code>operationId</code> 串联同一次交互操作。
+    </div>
+    <table>
+      <thead>
+      <tr>
+        <th>文件</th>
+        <th>职责</th>
+        <th>不做</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>application/transaction/operation-recorder.ts</code></td>
+        <td>接收命令产出的变更和元数据，写入可回放条目</td>
+        <td>不持有原始 store 的写权限之外的副作用</td>
+      </tr>
+      <tr>
+        <td><code>application/transaction/replay-applier.ts</code></td>
+        <td>读取条目并按顺序应用到目标状态</td>
+        <td>不解释意图，不重做领域校验</td>
+      </tr>
+      <tr>
+        <td><code>infrastructure/undo-redo/history-store.ts</code></td>
+        <td>提供条目的存储、查询、容量控制</td>
+        <td>不生成 operationId、不组装事务、不参与重放编排</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      后续只有在明确需要撤销重做、操作审计或历史回放时，才按上述职责新增实现；届时由命令统一生成元数据，历史存储只负责落盘，不反向扩展当前协作协议。
+    </div>
+    <pre><code>// history-store.ts
+export async function append(entry) {
+  await storage.insert(entry);
+}
+
+export async function listByTransaction(transactionId) {
+  return storage.find({ transactionId });
+}
+
+// replay-applier.ts
+export async function replay(entries, ctx) {
+  for (const entry of entries) {
+    await ctx.commandExecutor.execute(entry.commandType, entry.input, {
+      ...ctx,
+      meta: entry.meta,
+      source: 'replay',
+    });
+  }
+}</code></pre>
+
+    <h3 id="appendix-command-contract">4. 命令签名规范</h3>
+    <p>v0.1 给出了 <code>CommandResult</code> 形状，但没规定命令函数的签名形态和"命令能否 await 其它命令"。这是异步嵌套下事务边界混乱的根因。</p>
+    <div class="decision">
+      命令统一为异步函数，输入为显式参数对象，返回 <code>Promise&lt;CommandResult&gt;</code>。命令内部不 await 其它命令；复合流程必须由应用层薄编排承接，若后续出现稳定复用，再收口为 facade。
+    </div>
+    <pre><code>type CommandContext = {
+  // 由 application 注入：事务、recorder、evaluator、当前用户、时钟等
+};
+
+type CreateShapeInput = {
+  diagramId: string;
+  shapeType: string;
+  position: { x: number; y: number };
+  containerId?: string;
+  source?: 'user' | 'collab' | 'replay' | 'import';
+  // 标识类字段由 ctx 注入，禁止在命令内自造
+};
+
+async function executeCreateShape(
+  input: CreateShapeInput,
+  ctx: CommandContext,
+): Promise&lt;CommandResult&gt; {
+  const decision = await ctx.policy.canCreateShape(input);
+  if (!decision.allowed) {
+    return { ok: false, code: decision.code, message: decision.reason };
+  }
+
+  const containmentPlan = input.containerId
+    ? await ctx.containmentService.planAfterCreate({
+        diagramId: input.diagramId,
+        shapeType: input.shapeType,
+        containerId: input.containerId,
+      })
+    : null;
+  const layoutPlan = await ctx.regionLayoutService.planAfterCreate({
+    diagramId: input.diagramId,
+    shapeType: input.shapeType,
+    position: input.position,
+    containerId: input.containerId ?? null,
+  });
+
+  const meta = await ctx.transaction.run(async () =&gt; {
+    const shape = await ctx.shapeService.create({
+      ...input,
+      containmentPlan,
+      layoutPlan,
+    });
+    await ctx.shapesStore.add(shape);
+    return {
+      operationId: ctx.meta.nextOperationId(),
+      transactionId: ctx.meta.currentTransactionId(),
+      shapeId: shape.id,
+    };
+  });
+
+  return { ok: true, meta };
+}</code></pre>
+    <ul>
+      <li>同步命令不允许存在，避免 facade 编排时被误以为可"立刻拿到结果"。</li>
+      <li>命令内部禁止 <code>await executeXxxCommand(...)</code>。如果需要组合，先写在应用层薄编排里，后续若形成稳定复用点再收口到 facade。</li>
+      <li>复合流程在 facade 未出现前，由 <code>application</code> 层的薄编排用例或工作流承接，不允许塞回单个命令内部。</li>
+      <li>未来改为命令式协作后，再评估是否引入 <code>source</code> 字段区分用户、协作、回放和导入来源；当前协议不添加该字段。</li>
+      <li>所有 <code>id</code>、<code>timestamp</code>、<code>userId</code> 一律从 <code>ctx</code> 注入，命令内不调用 <code>Date.now()</code>、<code>crypto.randomUUID()</code>、<code>useUser().value</code> 等。</li>
+    </ul>
+    <div class="warning">
+      一旦命令开始自造标识或 await 其它命令，事务边界就破了。出现这种情况应当立即调整：标识上提到 ctx，组合下移到应用层薄编排；若复合流程成为稳定复用点，再收口到 facade。
+    </div>
+
+    <h3 id="appendix-phase3-tests">5. 阶段三单测清单</h3>
+    <p>v0.1 阶段三的通过标准只写"关键用例通过单测覆盖"，对"什么算关键"没有共识。下面给出阶段三必须落地的最小单测清单，缺一不可视为阶段三未完成。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>编号</th>
+        <th>测试对象</th>
+        <th>覆盖点</th>
+        <th>通过标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>T1</td>
+        <td><code>ContainmentService</code></td>
+        <td>父子归属的图类型差异</td>
+        <td>功能图、功能子图、跨类型场景至少各一例，结果稳定</td>
+      </tr>
+      <tr>
+        <td>T2</td>
+        <td><code>LineRoutingService</code></td>
+        <td>连线端点解绑/重绑</td>
+        <td>宿主被删后连线进入待重绑态，宿主变更后端点同步</td>
+      </tr>
+      <tr>
+        <td>T3</td>
+        <td><code>RegionLayoutService</code></td>
+        <td>区域扩展时的孤儿重挂</td>
+        <td>扩展后被推出边界的子节点自动挂回或显式标记待挂</td>
+      </tr>
+      <tr>
+        <td>T4</td>
+        <td><code>HydrationService</code></td>
+        <td>快照恢复后的结构修复</td>
+        <td>损坏快照恢复后能产出结构修复摘要，且不出现重复节点</td>
+      </tr>
+      <tr>
+        <td>T5</td>
+        <td><code>SetContainment</code> + <code>ContainmentService</code></td>
+        <td>命令能稳定串起服务</td>
+        <td>从命令入口走完一次归属变更，事务记录和事件载荷完整</td>
+      </tr>
+      <tr>
+        <td>T6</td>
+        <td><code>DeleteSelection</code> + <code>SelectionService</code></td>
+        <td>删除后的选中态清理</td>
+        <td>被删图形的选中态被清理，连带删除命中优先级符合预期</td>
+      </tr>
+      <tr>
+        <td>T7</td>
+        <td><code>DeleteSelection</code> + <code>ContainmentService</code></td>
+        <td>删除后的关系修复</td>
+        <td>宿主删除后，子节点按规则重挂或进入待挂状态，且结果可解释</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这七项不替代阶段二、三的其它回归用例，是阶段三的最小准入门槛。任何一项缺失，阶段三不应被标记完成。
+    </div>
+    <pre><code>it('reparents or marks pending after delete', async () =&gt; {
+  const diagram = await seedDiagramWithContainerAndChildren();
+
+  await executeDeleteSelection({ ids: [diagram.containerId] }, testCtx);
+
+  expect(containmentService.getParent(diagram.childId)).toBeNull();
+  expect(containmentService.isPendingAttach(diagram.childId)).toBe(true);
+});</code></pre>
+
+    <h3 id="appendix-stage1-extras">6. 阶段一执行清单补充</h3>
+    <p>v0.1 阶段一的"页面入口"分组中包含了 <code>icce-demo.page.vue</code>，但 demo 入口本质上属于调试性质，不应继续留在 <code>app/</code>。补一条硬性动作：</p>
+    <ol>
+      <li><code>icce-demo.page.vue</code> 必须从 <code>app/</code> 下线，迁入 <code>debug/examples/</code>。</li>
+      <li>构建脚本需增加守卫：生产构建命中 <code>debug/</code> 路径时直接报错或剔除。</li>
+      <li>路由表分两份：生产路由表只引用 <code>app/</code>，调试路由表只在开发态注册。</li>
+    </ol>
+    <pre><code>// vite.config.ts
+export default defineConfig(({ mode }) =&gt; ({
+  build: {
+    rollupOptions: {
+      external: mode === 'production' ? [/debug\//] : [],
+    },
+  },
+}));</code></pre>
+    <div class="warning">
+      demo 入口留在 <code>app/</code> 会让阶段一"调试与生产隔离"的目标形同虚设，必须在阶段一验收前完成下线。
+    </div>
+
+    <h3>附录变更说明</h3>
+    <ul>
+      <li>本附录不重写 v0.1 的主目录树、阶段切分、停止条件和验收口径，但补充阶段一执行要求。</li>
+      <li>本附录新增的硬约束（协作链路、命令签名、阶段三单测清单 T1 至 T7）从 v0.2 起作为迁移执行依据。</li>
+      <li>附录中所有表格、流程、代码示例与 v0.1 保持同一种语言风格，方便合入同一份 HTML 文档。</li>
+      <li>v0.3 补丁与本附录并行生效，v0.2 的硬约束保持有效，v0.3 在其基础上叠加验证相关条款。</li>
+    </ul>
+  </div>
+
+  <h2 id="appendix-v03">附录：v0.3 评审补丁</h2>
+  <div class="section">
+    <p>v0.1 与 v0.2 都没有为 <code>canvas/validation/</code> 下的校验逻辑划定归位，导致这部分规则既未沉淀到领域层，也未在命令层和事务层得到显式处理。本附录只补这一处空缺，不重写主目录树、阶段切分、停止条件和其他已稳定的硬约束。</p>
+    <div class="note">
+      附录定位：补齐"图完整性校验"的领域归位、命令入口与单测准入门槛，与 v0.2 补丁并行生效；未在本附录中改写的内容沿用 v0.1、v0.2 的既有表述。
+    </div>
+    <div class="warning">
+      本附录中的接口是迁移目标，不代表当前代码已经具备同名服务和命令。迁移期间必须保留现有 <code>DfdValidationResult</code> 的兼容适配：规则结果继续使用 <code>passed</code>、<code>ruleCode</code>、<code>diagramType</code>、<code>targetType</code>、<code>targets</code> 和 <code>message</code> 字段，待服务层稳定后再统一对外报告结构。不得仅为匹配示例而在规则层同时引入另一套 <code>ok</code> 字段。
+    </div>
+    <h3 id="appendix-validation-scope">1. 验证规则归位范围</h3>
+    <p>把"图完整性校验"拆成三类职责：</p>
+    <table>
+      <thead>
+      <tr>
+        <th>类型</th>
+        <th>主要职责</th>
+        <th>建议归位</th>
+        <th>典型内容</th>
+        <th>不能做什么</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>校验规则</td>
+        <td>纯判定函数，输入领域对象与上下文，输出布尔或枚举</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td>功能节点是否完整、区域是否绑定到末级节点、是否要求绑定设备、是否要求数据条件</td>
+        <td>不引用服务，不组织命中点，不直接读取 store</td>
+      </tr>
+      <tr>
+        <td>校验服务</td>
+        <td>组合规则、消费上下文、收集命中点、产出可消费结果</td>
+        <td><code>domain/services/validation.service.ts</code></td>
+        <td>按图类型分流、合并活动图与流程图的规则集、归一化命中 targets、附加修复建议</td>
+        <td>不写 store，不拦截命令，不控制 UI 显隐</td>
+      </tr>
+      <tr>
+        <td>校验展示</td>
+        <td>把校验结果映射为浮层、徽标或禁言态</td>
+        <td><code>ui/</code>，可继续消费 <code>debug/validation-simulator.vue</code></td>
+        <td>校验面板、节点红点、保存按钮置灰、错误提示文案</td>
+        <td>不重新计算规则，不直接读 store 原始结构</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="decision">
+      v0.3 起，<code>canvas/validation/</code> 不再作为独立目录保留；纯规则进 <code>domain/rules/</code>，组合与命中点收集进 <code>domain/services/</code>，展示留在 <code>ui/</code> 与 <code>debug/</code>。
+    </div>
+    <div class="warning">
+      一旦校验文件开始依赖 <code>regionIndex</code> 之类的查询对象，就必须明确为"服务消费查询对象"，而不是把"组合规则"和"消费查询"写在同一个文件里。两者一旦混在一起，单元测试就只能用大对象夹具，规则下沉就失去了意义。
+    </div>
+    <h3 id="appendix-validation-split">2. 验证规则与服务拆分</h3>
+    <p>沿用 v0.2 附录"规则与服务边界"的口径：只依赖领域对象和显式上下文、能够独立测试的判定放 <code>domain/rules/</code>；需要跨图形、区域、结构树或图类型策略组合计算的放 <code>domain/services/</code>。这里的划分标准是依赖边界和职责，不要求规则必须是一行表达式。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>问题类型</th>
+        <th>放哪</th>
+        <th>示例</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>功能节点是否拥有名称、是否拥有负责人</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td><code>isFunctionNodeCompliant(treeNode)</code></td>
+      </tr>
+      <tr>
+        <td>区域是否绑定到结构树末级功能节点</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td><code>isRegionBoundToLeafNode(region, leafNodeUids)</code></td>
+      </tr>
+      <tr>
+        <td>指定图形是否必须绑定设备</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td><code>requiresActivityDeviceBinding(shape)</code></td>
+      </tr>
+      <tr>
+        <td>多边形是否必须配置数据条件</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td><code>requiresFlowDataCondition(shape)</code></td>
+      </tr>
+      <tr>
+        <td>负责人的区域是否已经提交</td>
+        <td><code>domain/rules/validation-rules.ts</code></td>
+        <td><code>isOwnerRegionSubmitted(region, diagramType)</code></td>
+      </tr>
+      <tr>
+        <td>按图类型与上下文合并规则、收集命中点</td>
+        <td><code>domain/services/validation.service.ts</code></td>
+        <td><code>ValidationService.validate(input)</code></td>
+      </tr>
+      <tr>
+        <td>变更影响分析与"提交态失效"计算</td>
+        <td><code>domain/services/validation.service.ts</code></td>
+        <td><code>ValidationService.findOwnersToReset(changedIds)</code></td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      拆分时遵循一条经验法则：先看函数是否依赖"领域对象 + 上下文"以外的运行时产物（如 store、组件、Konva）。如果只依赖领域对象与上下文，进 rules；如果还需要查询服务、图类型策略或多步组合，进 services。
+    </div>
+    <h4>服务输入输出规范</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>维度</th>
+        <th>输入要求</th>
+        <th>输出要求</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>形态</td>
+        <td>显式参数对象，不直接传 store、组件或 Konva 实例</td>
+        <td>返回纯对象校验结果，包含 <code>ruleCode</code>、<code>diagramType</code>、<code>level</code>、<code>targetType</code>、<code>targets</code>、<code>message</code></td>
+      </tr>
+      <tr>
+        <td>稳定性</td>
+        <td>输入可序列化、可回放，避免使用函数引用</td>
+        <td>同样输入产出同样结果，规则与图类型组合确定</td>
+      </tr>
+      <tr>
+        <td>语义</td>
+        <td>参数名表达业务含义，如 <code>diagramType</code>、<code>treeNodes</code>、<code>currentUserId</code></td>
+        <td>返回值说明"哪些目标命中了哪条规则"，不要只返回裸布尔值</td>
+      </tr>
+      <tr>
+        <td>边界</td>
+        <td>输入只放本次校验必须的内容，不塞 UI 过程态和临时预览态</td>
+        <td>输出不混 UI 文案、路由跳转或组件状态</td>
+      </tr>
+      </tbody>
+    </table>
+    <h3 id="appendix-validation-cmd">3. 验证用例与命令衔接</h3>
+    <p>应用层新增一个用例 <code>ValidateDiagram</code>，专门承接"对当前图执行一次完整性校验"的意图，与 v0.1 既有的六个用例并列。校验是只读行为；权限判断可以作为应用层前置策略，但不能让规则服务承担路由、界面显隐或状态写入。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>命令</th>
+        <th>用户意图</th>
+        <th>主要依赖</th>
+        <th>边界说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>ValidateDiagram</code></td>
+        <td>校验图完整性</td>
+        <td>validation、diagram-policy</td>
+        <td>组合规则收集命中点，不触发任何写入，也不参与事务边界。</td>
+      </tr>
+      <tr>
+        <td><code>HydrateDiagram</code></td>
+        <td>恢复画布</td>
+        <td>hydration、diagram-query、diagram-policy、validation</td>
+        <td>恢复完成后可调用一次只读校验并返回命中点；结构修复仍由 <code>HydrationService</code> 负责，修复摘要与校验结果分开表达。</td>
+      </tr>
+      <tr>
+        <td><code>MoveSelection</code> / <code>DeleteSelection</code></td>
+        <td>移动或删除选中项</td>
+        <td>selection、region-layout、line-routing、validation</td>
+        <td>迁移完成后由命令前置调用 <code>findOwnersToReset</code>，把需要失效的负责人和区域交给事务层处理；现阶段允许由控制器兼容调用，但不得新增 UI 侧调用。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="decision">
+      <code>ValidateDiagram</code> 是只读命令，不进入事务层，不生成 <code>operationId</code> 或 <code>transactionId</code>。它只负责把当前图与上下文喂给 <code>ValidationService</code>，再把结果原样返回。若恢复流程需要修复结构，必须由 <code>HydrateDiagram</code> 明确返回修复结果，不能把修复行为隐藏在验证调用中。
+    </div>
+    <h4>推荐写法</h4>
+    <pre><code>type ValidateDiagramInput = {
+  diagramId: string;
+  diagramType: 'activity' | 'function' | 'flow' | 'logic';
+  shapes: ReadonlyArray&lt;Shape&gt;;
+  treeNodes: ReadonlyArray&lt;TreeNode&gt;;
+  regionIndex?: RegionIndexSnapshot;
+  currentUserId?: string | null;
+  ruleCodes?: ReadonlyArray&lt;DfdValidationRuleCode&gt;;
+};
+
+type ValidationOutcome = {
+  passed: boolean;
+  ruleCode: DfdValidationRuleCode;
+  diagramType: ValidateDiagramInput['diagramType'];
+  level: 'error' | 'warning';
+  targetType: 'canvas' | 'tree-node' | 'region' | 'shape' | 'line';
+  targets: ReadonlyArray&lt;DfdValidationTarget&gt;;
+  message: string;
+};
+
+type ValidationReport = {
+  passed: boolean;
+  outcomes: ValidationOutcome[];
+};
+
+type ValidateDiagramResult =
+  | { ok: true; report: ValidationReport }
+  | { ok: false; code: string; message: string };
+
+async function executeValidateDiagram(
+  input: ValidateDiagramInput,
+  ctx: CommandContext,
+): Promise&lt;ValidateDiagramResult&gt; {
+  const outcomes = await ctx.validationService.validate({
+    diagramType: input.diagramType,
+    shapes: input.shapes,
+    treeNodes: input.treeNodes,
+    regionIndex: input.regionIndex,
+    currentUserId: input.currentUserId,
+    ruleCodes: input.ruleCodes,
+  });
+
+  return {
+    ok: true,
+    report: {
+      passed: outcomes.every((outcome) =&gt; outcome.passed),
+      outcomes,
+    },
+  };
+}</code></pre>
+    <h4>与协作链路的关系</h4>
+    <p>远端消息落地到本地状态后，若本次变更属于"会影响负责人提交态"的范围，本地命令在完成写入前必须先调用 <code>ValidationService.findOwnersToReset</code>，把被失效的负责人与区域作为命令返回值的一部分交给事务层。这里的服务只计算影响范围，不直接修改提交态；提交态写入由命令和事务层完成。传输适配器仍然不直接调用 <code>ValidationService</code>，只负责把远端载荷交给对应命令。</p>
+    <div class="warning">
+      严禁在 <code>ui/</code>、<code>infrastructure/collab/</code> 或 <code>debug/</code> 中直接调用 <code>ValidationService.findOwnersToReset</code>。一旦发现这种调用，必须下沉为命令前置调用，否则事务边界会出现"前置判定落在 UI 侧"的破口。
+    </div>
+    <h3 id="appendix-validation-migration">4. 验证模块迁移清单</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>现有文件</th>
+        <th>目标归位</th>
+        <th>阶段</th>
+        <th>迁移说明</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>canvas/validation/validators.ts</code></td>
+        <td><code>domain/rules/validation-rules.ts</code> + <code>domain/services/validation-service.ts</code></td>
+        <td>阶段三</td>
+        <td>纯判定函数和规则注册表全部下沉到领域规则文件，组合逻辑迁入服务。</td>
+      </tr>
+      <tr>
+        <td><code>canvas/validation/accessors.ts</code></td>
+        <td><code>domain/rules/validation-helpers.ts</code>（判定小工具）</td>
+        <td>阶段三</td>
+        <td>纯访问器已迁入领域辅助规则，原文件已删除。</td>
+      </tr>
+      <tr>
+        <td><code>canvas/validation/data-resolver.ts</code></td>
+        <td><code>infrastructure/adapters/validation-context-resolver.ts</code></td>
+        <td>阶段三</td>
+        <td>负责接口、状态仓库和浏览器运行时数据归一化；由应用适配入口注入 <code>ValidationContextResolver</code>，领域服务不感知其实现。</td>
+      </tr>
+      <tr>
+        <td><code>canvas/validation/shared.ts</code></td>
+        <td><code>domain/services/validation.service.ts</code> + <code>ui/</code></td>
+        <td>阶段三</td>
+        <td>纯领域部分已迁入领域共享规则，原文件已删除。</td>
+      </tr>
+      <tr>
+        <td><code>canvas/validation/types.ts</code>、<code>messages.ts</code></td>
+        <td><code>domain/rules/</code> + <code>ui/</code></td>
+        <td>阶段三</td>
+        <td>类型、规则码和规则消息已统一保留在领域层，原文件已删除。</td>
+      </tr>
+      <tr>
+        <td><code>debug/validation-simulator.vue</code></td>
+        <td><code>debug/</code>（原位）</td>
+        <td>阶段三</td>
+        <td>展示壳不动，但消费入口从 <code>canvas/validation/</code> 改为 <code>domain/services/validation.service.ts</code>。</td>
+      </tr>
+      </tbody>
+    </table>
+    <h4>迁移动作</h4>
+    <ol>
+      <li>先把 <code>validators.ts</code> 中的 11 条规则按"纯判定 / 组合收集"两类拆开，逐一迁入规则文件和服务文件。</li>
+      <li>把 <code>canvas/validation/data-resolver.ts</code> 迁入 <code>infrastructure/adapters/validation-context-resolver.ts</code>，领域服务不再直接依赖画布校验目录。</li>
+      <li>移除领域层的接口读取型 <code>validateRule</code> 便捷入口，改由 <code>infrastructure/adapters/validation-entry.ts</code> 解析上下文后调用 <code>ValidationService.validate</code>。</li>
+      <li>把 <code>findSubmittedRegionOwnersToReset</code> 拆为服务的 <code>findOwnersToReset</code>，由 <code>MoveSelection</code>、<code>DeleteSelection</code> 命令前置调用；控制器暂保留实际提交态写入适配，确保旧入口与新入口的结论一致。</li>
+      <li>把 <code>DFD_VALIDATION_RULES</code> 注册表从 <code>canvas/validation/</code> 迁入 <code>domain/rules/validation-rules.ts</code>，领域服务通过领域注册表组合规则，旧路径已删除。</li>
+      <li>在命令上下文里提供 <code>validationService</code> 注入点，UI 侧继续通过命令调用服务，调试页保留独立调用通道。</li>
+    </ol>
+    <h3 id="appendix-validation-tests">5. 验证相关单测补充</h3>
+    <p>在 v0.2 附录"阶段三单测清单"七项基础上，追加 v0.3 起必须落地的最小单测条目。任一缺失视为阶段三未完成。验证相关测试统一放在 <code>src/views/icce/tests/</code> 下并使用 Vitest；迁移期间原有 Jest 用例可暂时保留，但不得新增分散在业务源码目录中的验证测试。</p>
+    <table>
+      <thead>
+      <tr>
+        <th>编号</th>
+        <th>测试对象</th>
+        <th>覆盖点</th>
+        <th>通过标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>T8</td>
+        <td><code>validation-rules</code></td>
+        <td>纯判定函数</td>
+        <td>功能节点完整性、区域绑定、设备绑定、数据条件、负责人区域提交态各至少一例，结果稳定</td>
+      </tr>
+      <tr>
+        <td>T9</td>
+        <td><code>ValidationService</code></td>
+        <td>图类型分流与命中点收集</td>
+        <td>活动图与流程图各覆盖三类典型规则；无适用规则的功能图、逻辑图不产生误报，<code>targets</code> 去重并按 <code>ruleCode</code> 分组</td>
+      </tr>
+      <tr>
+        <td>T10</td>
+        <td><code>ValidationService.findOwnersToReset</code></td>
+        <td>变更触发的提交态反算</td>
+        <td>图形与连线变更后能正确找出需要反提交的负责人与区域，重复调用结果稳定</td>
+      </tr>
+      <tr>
+        <td>T11</td>
+        <td><code>ValidateDiagram</code> + <code>ValidationService</code></td>
+        <td>命令能稳定串起服务</td>
+        <td>从命令入口走完一次校验，返回结构符合 <code>ValidateDiagramResult</code>，不写入任何状态</td>
+      </tr>
+      <tr>
+        <td>T12</td>
+        <td><code>MoveSelection</code> / <code>DeleteSelection</code> + <code>ValidationService</code></td>
+        <td>命令前置调用服务</td>
+        <td>提交态失效结果作为命令返回值一部分，事务记录中能区分"提交态失效"与"正常删除"</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      这五项与 v0.2 附录的七项是"并列准入门槛"，不互相替代。任何一项缺失，阶段三不应被标记完成。
+    </div>
+    <h4>测试目录、脚本与迁移验收</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>项目</th>
+        <th>约定</th>
+        <th>验收标准</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>目录</td>
+        <td><code>src/views/icce/tests/**/*.spec.ts</code></td>
+        <td>新增验证测试只能放在该目录；测试文件不与生产源码同目录。</td>
+      </tr>
+      <tr>
+        <td>框架</td>
+        <td><code>vitest</code>，统一从 <code>vitest</code> 引入 <code>describe</code>、<code>it</code>、<code>expect</code>、<code>vi</code></td>
+        <td>不得新增 <code>jest.mock</code>、<code>jest.fn</code> 等 Jest 专属写法。</td>
+      </tr>
+      <tr>
+        <td>执行</td>
+        <td><code>pnpm test:unit:vitest</code></td>
+        <td>阶段三验收至少执行一次完整 ICCE Vitest 集合，并保留失败输出；单文件调试可使用同一配置加文件路径。</td>
+      </tr>
+      <tr>
+        <td>迁移</td>
+        <td>旧 Jest 用例按模块迁入 <code>icce/tests/</code> 后再删除原文件</td>
+        <td>迁移前后断言语义一致；若业务规则变化导致断言变化，必须新增或修改对应行为说明，不能只改到测试通过。</td>
+      </tr>
+      </tbody>
+    </table>
+    <div class="warning">
+      “测试命令退出成功”不等于验证迁移完成。验收时还要确认测试配置实际只收集目标目录、别名和 Vue 文件转换配置可用、测试未依赖真实接口或浏览器全局对象，并至少保留一条跨图类型或无适用规则的回归用例。
+    </div>
+    <h4>与现有 v0.2 单测的衔接</h4>
+    <ul>
+      <li>T8 与 T9 共同覆盖原 <code>canvas/validation/validators.ts</code> 中 11 条规则的归位效果，可作为该文件删除前的回归门槛。</li>
+      <li>T10 把提交态影响分析的行为锁住，旧规则层重复实现已删除，命令层后续重构时只能改入口不能改结论。</li>
+      <li>T11、T12 用来约束命令的"前置调用 + 返回结构"，避免 <code>ValidationService</code> 在命令外部被绕过。</li>
+    </ul>
+    <h3>v0.3 附录变更说明</h3>
+    <ul>
+      <li>本附录不重写 v0.1、v0.2 的主目录树、阶段切分、停止条件和验收口径，只补"图完整性校验"的领域归位与命令入口。</li>
+      <li>本附录新增的硬约束（校验归位、<code>ValidateDiagram</code> 命令、阶段三单测补充 T8 至 T12）从 v0.3 起作为迁移执行依据。</li>
+      <li>本附录与 v0.2 附录并行生效：v0.2 的协作链路、命令签名、阶段三单测清单 T1 至 T7 仍然有效，v0.3 在其基础上叠加。</li>
+      <li>附录中所有表格、流程、代码示例与 v0.1、v0.2 保持同一种语言风格，方便合入同一份 HTML 文档。</li>
+    </ul>
+  </div>
+</main>
+</div>
+<script>
+  (function () {
+    const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+    const targets = links
+      .map((link) => {
+        const id = link.getAttribute('href')?.slice(1);
+        const target = id ? document.getElementById(id) : null;
+        return target ? { link, target } : null;
+      })
+      .filter(Boolean);
+
+    if (targets.length === 0) return;
+
+    const setActive = (activeLink) => {
+      links.forEach((link) => link.classList.toggle('active', link === activeLink));
+      document.querySelectorAll('.toc li.open').forEach((item) => item.classList.remove('open'));
+      const currentItem = activeLink?.closest('li');
+      if (!currentItem) return;
+
+      if (currentItem.querySelector(':scope > ol')) {
+        currentItem.classList.add('open');
+      }
+
+      let parent = currentItem.parentElement;
+      while (parent && parent.classList && parent.classList.contains('toc') === false) {
+        if (parent.tagName === 'LI') {
+          parent.classList.add('open');
+        }
+        parent = parent.parentElement;
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
+
+        if (visible.length > 0) {
+          const active = targets.find((item) => item.target === visible[0].target);
+          if (active) setActive(active.link);
+        }
+      },
+      {
+        rootMargin: '-20% 0px -65% 0px',
+        threshold: [0.1, 0.25, 0.5, 0.75, 1],
+      }
+    );
+
+    targets.forEach((item) => observer.observe(item.target));
+
+    links.forEach((link) => {
+      link.addEventListener('click', () => {
+        setActive(link);
+      });
+    });
+
+    const first = targets[0];
+    if (first) setActive(first.link);
+  })();
+</script>
+  </div>
+</details>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICCE 测试问题清单</title>
+    <link rel="stylesheet" href="//unpkg.com/element-plus/dist/index.css" />
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --border: #dbe3f0;
+        --text: #0f172a;
+        --muted: #667085;
+        --muted-2: #94a3b8;
+        --accent: #245bdb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.55 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          'PingFang SC',
+          'Hiragino Sans GB',
+          'Microsoft YaHei',
+          sans-serif;
+      }
+
+      #app,
+      .page {
+        height: 100vh;
+      }
+
+      .page {
+        width: 100%;
+        padding: 16px 16px 18px;
+      }
+
+      .shell {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        height: 100%;
+      }
+
+      .hero {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        padding: 20px 22px 18px;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .hero-copy {
+        max-width: 900px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        padding: 6px 12px;
+        border: 1px solid rgba(36, 91, 219, 0.18);
+        border-radius: 999px;
+        background: rgba(36, 91, 219, 0.06);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero-title {
+        margin: 0;
+        font:
+          700 clamp(28px, 4vw, 44px) / 1.05 'Songti SC',
+          'STSong',
+          'SimSun',
+          serif;
+        letter-spacing: 0.02em;
+      }
+
+      .hero-desc {
+        margin-top: 10px;
+        max-width: 980px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        min-width: 280px;
+      }
+
+      .metric {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 116px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: #fff;
+      }
+
+      .metric-value {
+        color: var(--text);
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .status-note {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .table-panel {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 18px 0;
+      }
+
+      .panel-tools {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      .panel-hint {
+        color: var(--muted-2);
+        font-size: 12px;
+      }
+
+      .filter-label {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .table-wrap {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        padding: 14px 14px 16px;
+        overflow: hidden;
+      }
+
+      .issue-table {
+        width: 100%;
+        height: 100%;
+      }
+
+      .issue-table .cell,
+      .issue-table .el-table__body td .cell,
+      .issue-table .el-table__header th .cell {
+        white-space: nowrap;
+      }
+
+      .issue-table .el-table__header-wrapper th {
+        background: #f8faff;
+        color: #334155;
+        font-weight: 700;
+      }
+
+      .issue-table .el-table__row:hover > td {
+        background: #f8fbff !important;
+      }
+
+      .issue-table .el-table__cell {
+        border-bottom-color: rgba(15, 23, 42, 0.06);
+      }
+
+      .issue-table .el-table__inner-wrapper::before {
+        display: none;
+      }
+
+      .status-tag,
+      .priority-tag {
+        min-width: 68px;
+        justify-content: center;
+        font-weight: 700;
+      }
+
+      .priority-tag {
+        min-width: 54px;
+      }
+
+      .empty-tip {
+        color: var(--muted);
+      }
+
+      @media (max-width: 960px) {
+        .page {
+          padding: 12px;
+        }
+
+        .hero-top {
+          flex-direction: column;
+        }
+
+        .hero-meta {
+          justify-content: flex-start;
+        }
+
+        .panel-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script src="//unpkg.com/vue@3"></script>
+    <script src="//unpkg.com/element-plus"></script>
+    <script type="module">
+      import { issues as legacyIssues } from './dfd-issues-data.js';
+      import { issues as testIssues } from './icce-test-issues-data.js';
+
+      const issues = [...legacyIssues, ...testIssues];
+
+      const { createApp, computed, ref } = window.Vue;
+      const ElementPlus = window.ElementPlus;
+
+      createApp({
+        setup() {
+          const statusFilter = ref('待处理');
+          const doneCount = computed(() => issues.filter((item) => item.status === '已完成').length);
+          const todoCount = computed(() => issues.filter((item) => item.status !== '已完成').length);
+          const progress = computed(() => Math.round((doneCount.value / issues.length) * 100));
+          const filteredIssues = computed(() => {
+            if (statusFilter.value === '全部') return issues;
+            return issues.filter((item) => item.status === statusFilter.value);
+          });
+          const visibleCount = computed(() => filteredIssues.value.length);
+
+          const statusType = (status) => {
+            if (status === '已完成') return 'success';
+            if (status === '待处理') return 'danger';
+            return 'warning';
+          };
+
+          const statusEffect = (status) => {
+            if (status === '已完成') return 'light';
+            return 'plain';
+          };
+
+          const priorityType = (priority) => {
+            if (priority === 'P0') return 'danger';
+            if (priority === 'P1') return 'warning';
+            return 'info';
+          };
+
+          return {
+            issues,
+            statusFilter,
+            doneCount,
+            todoCount,
+            progress,
+            filteredIssues,
+            visibleCount,
+            statusType,
+            statusEffect,
+            priorityType,
+          };
+        },
+        template: `
+          <div class="page">
+            <div class="shell">
+              <section class="hero">
+                <div class="hero-top">
+                  <div class="hero-copy">
+                    <div class="eyebrow">ICCE Issue Board</div>
+                    <h1 class="hero-title">ICCE 测试问题清单</h1>
+                    <div class="hero-desc">
+                      保留原有 DFD 问题，并同步 ICCE 测试文档中的问题，聚焦问题描述、处理方案、优先级和状态。
+                    </div>
+                  </div>
+                  <div class="hero-meta">
+                    <div class="metric">
+                      <div class="metric-value">{{ issues.length }}</div>
+                      <div class="metric-label">问题总数</div>
+                    </div>
+                    <div class="metric">
+                      <div class="metric-value">{{ doneCount }}</div>
+                      <div class="metric-label">已完成</div>
+                    </div>
+                    <div class="metric">
+                      <div class="metric-value">{{ todoCount }}</div>
+                      <div class="metric-label">待处理</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="status-strip">
+                  <el-tag type="info" effect="plain">来源：DFD 历史问题 + ICCE 测试文档</el-tag>
+                  <el-tag type="success" effect="plain">完成率 {{ progress }}%</el-tag>
+                  <span class="status-note">表格内容尽量保持不换行，长文本通过悬浮提示查看。</span>
+                </div>
+              </section>
+
+              <section class="table-panel">
+                <div class="panel-head">
+                  <div>
+                    <h2 class="panel-title">问题明细</h2>
+                    <div class="panel-hint">原有问题保留，新增测试问题独立维护。</div>
+                  </div>
+                  <div class="panel-tools">
+                    <span class="filter-label">状态筛选</span>
+                    <el-radio-group v-model="statusFilter" size="small">
+                      <el-radio-button label="全部">全部</el-radio-button>
+                      <el-radio-button label="已完成">已完成</el-radio-button>
+                      <el-radio-button label="待处理">待处理</el-radio-button>
+                      <el-radio-button label="待确认">待确认</el-radio-button>
+                    </el-radio-group>
+                    <div class="panel-hint">当前显示 {{ visibleCount }} 条</div>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <el-table
+                    class="issue-table"
+                    :data="filteredIssues"
+                    height="100%"
+                    table-layout="auto"
+                    empty-text="暂无问题记录"
+                    stripe
+                    border
+                  >
+                    <el-table-column prop="id" label="ID" width="88" align="center" fixed="left" />
+                    <el-table-column
+                      prop="problem"
+                      label="问题"
+                      min-width="340"
+                      show-overflow-tooltip
+                    />
+                    <el-table-column
+                      prop="solution"
+                      label="处理方案"
+                      min-width="520"
+                      show-overflow-tooltip
+                    />
+                    <el-table-column prop="priority" label="优先级" width="96" align="center">
+                      <template #default="{ row }">
+                        <el-tag
+                          class="priority-tag"
+                          :type="priorityType(row.priority)"
+                          effect="light"
+                        >
+                          {{ row.priority }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="状态" width="116" align="center">
+                      <template #default="{ row }">
+                        <el-tag
+                          class="status-tag"
+                          :type="statusType(row.status)"
+                          :effect="statusEffect(row.status)"
+                        >
+                          {{ row.status }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column
+                      prop="addedDate"
+                      label="添加日期"
+                      width="128"
+                      align="center"
+                    />
+                    <el-table-column
+                      prop="fixedDate"
+                      label="修复日期"
+                      width="128"
+                      align="center"
+                      fixed="right"
+                    />
+                  </el-table>
+                </div>
+              </section>
+            </div>
+          </div>
+        `,
+      })
+        .use(ElementPlus)
+        .mount('#app');
+    </script>
+  </body>
+</html>

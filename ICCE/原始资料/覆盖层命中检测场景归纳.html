@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICCE 命中逻辑说明</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #d8e0ea;
+      --text: #172033;
+      --muted: #667085;
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --green: #087443;
+      --green-soft: #e9f8f0;
+      --amber: #9a5b00;
+      --amber-soft: #fff5df;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --code: #eef2f6;
+      --shadow: 0 8px 24px rgba(30, 53, 87, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 28px 20px 64px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+    }
+    .layout { max-width: 1440px; margin: 0 auto; display: flex; gap: 24px; align-items: flex-start; }
+    aside {
+      position: sticky;
+      top: 20px;
+      width: 238px;
+      flex: 0 0 238px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+    aside strong { display: block; margin-bottom: 10px; font-size: 15px; }
+    aside a { display: block; padding: 5px 0; color: var(--muted); text-decoration: none; font-size: 13px; line-height: 1.5; }
+    aside a:hover { color: var(--blue); }
+    main { min-width: 0; flex: 1; max-width: 1160px; }
+    h1 { margin: 0; font-size: 32px; line-height: 1.25; letter-spacing: -0.02em; }
+    h2 { margin: 42px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); font-size: 22px; scroll-margin-top: 20px; }
+    h3 { margin: 24px 0 10px; font-size: 17px; scroll-margin-top: 20px; }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 22px; }
+    li { margin: 5px 0; }
+    code { padding: 2px 5px; border-radius: 4px; background: var(--code); font: 0.92em "SF Mono", Consolas, monospace; }
+    .hero, .card, table, .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+    .hero { padding: 26px 28px; }
+    .subtitle { margin-top: 10px; color: var(--muted); }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .tag { padding: 4px 9px; border-radius: 999px; background: var(--blue-soft); color: #1d4ed8; font-size: 12px; }
+    .callout { margin: 18px 0; padding: 14px 16px; border-left: 4px solid var(--blue); background: var(--blue-soft); border-radius: 8px; }
+    .callout.warn { border-left-color: var(--amber); background: var(--amber-soft); }
+    .callout.success { border-left-color: var(--green); background: var(--green-soft); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { padding: 18px; box-shadow: none; }
+    .card h3 { margin-top: 0; }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; font-size: 14px; box-shadow: none; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { background: var(--surface-soft); font-weight: 650; }
+    tr:last-child td { border-bottom: 0; }
+    .status { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+    .status.green { color: var(--green); background: var(--green-soft); }
+    .status.amber { color: var(--amber); background: var(--amber-soft); }
+    .status.red { color: var(--red); background: var(--red-soft); }
+    .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px; }
+    .flow .node { min-width: 150px; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-soft); text-align: center; }
+    .flow .arrow { color: var(--blue); font-size: 20px; }
+    .mini { color: var(--muted); font-size: 13px; }
+    .source { color: var(--muted); font-size: 13px; }
+    .source code { color: var(--text); }
+    @media (max-width: 900px) {
+      body { padding: 16px 12px 40px; }
+      .layout { display: block; }
+      aside { position: static; width: auto; margin-bottom: 16px; }
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 26px; }
+      table { display: block; overflow-x: auto; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <strong>文档导航</strong>
+      <a href="#scope">1. 文档范围</a>
+      <a href="#chain">2. 调用链</a>
+      <a href="#pointer-chain">2.1 普通指针工具链路</a>
+      <a href="#result">3. 命中结果</a>
+      <a href="#scenarios">4. 命中行为</a>
+      <a href="#rules">5. 规则与优先级</a>
+      <a href="#requirements">6. 行为清单</a>
+      <a href="#boundaries">7. 实现边界</a>
+      <a href="#matrix">8. 行为矩阵</a>
+    </aside>
+
+    <main>
+      <section class="hero">
+        <h1>ICCE 命中逻辑说明</h1>
+        <p class="subtitle">说明 ICCE 画布在普通指针、选中覆盖层、区域、图形、连线和富文本交互中的命中解析规则、事件链路与拖拽行为。</p>
+        <div class="meta">
+          <span class="tag">覆盖层透传</span>
+          <span class="tag">嵌套图形</span>
+          <span class="tag">富文本</span>
+          <span class="tag">连线</span>
+          <span class="tag">拖拽意图</span>
+        </div>
+      </section>
+
+      <section id="scope">
+        <h2>1. 文档范围</h2>
+        <div class="callout success"><strong>核心结论：</strong>覆盖层命中检测不是普通的“当前节点命中判断”，而是为了让位于舞台上层的选中框继续还原底层业务语义。它必须在覆盖层、选中图形、嵌套子图形、连线和富文本之间做语义分流。</div>
+        <p>本文覆盖 <code>overlay-hit.ts</code>、普通指针工具命中、选中覆盖层交互和区域几何兜底。文档以当前代码行为为准，区分共享命中能力与覆盖层专用语义。</p>
+        <ul>
+          <li><strong>覆盖层所有者：</strong>当前选中的区域或图形，由 <code>OverlayOwner</code> 表示。</li>
+          <li><strong>底层候选：</strong>覆盖层下方可能被点击的图形、连线、富文本标签、条件片段或普通文本。</li>
+          <li><strong>最终意图：</strong>选择底层目标、转发富文本动作、拖拽选中目标、抑制覆盖层拖拽，或拖拽覆盖层所有者。</li>
+        </ul>
+      </section>
+
+      <section id="chain">
+        <h2>2. 调用链</h2>
+        <div class="diagram flow">
+          <div class="node"><code>SelectionLayer.vue</code><br><span class="mini">选中覆盖层事件</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>selection-overlay-interaction.ts</code><br><span class="mini">交互编排与结果消费</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>overlay-hit.ts</code><br><span class="mini">覆盖层语义命中</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>canvas-hit-resolver.ts</code><br><span class="mini">舞台节点解析</span></div>
+        </div>
+        <table>
+          <thead><tr><th>调用入口</th><th>调用方式</th><th>使用场景</th><th>结果消费</th></tr></thead>
+          <tbody>
+            <tr><td><code>resolveHit</code></td><td><code>resolveOverlaySemanticHitAtPoint</code><br>有指针坐标时的单点快速路径</td><td>覆盖层 pointerdown、选中区域/图形双击</td><td>选择、富文本标签动作、双击编辑判定</td></tr>
+            <tr><td><code>resolveDragIntent</code></td><td><code>resolveOverlayDragIntent</code></td><td>选中图形覆盖层 pointerdown 后决定谁负责拖拽</td><td>选中底层目标、抑制当前覆盖层、拖拽覆盖层所有者</td></tr>
+          </tbody>
+        </table>
+        <p class="source">主要调用文件：<code>ui/canvas/selection/SelectionLayer.vue</code>、<code>ui/canvas/selection/selection-overlay-interaction.ts</code>。</p>
+
+        <h3 id="pointer-chain">2.1 普通指针工具命中链路</h3>
+        <div class="diagram flow">
+          <div class="node"><code>pointer.tool.ts</code><br><span class="mini">事件路由</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>pointer-interaction.ts</code><br><span class="mini">交互编排</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>pointer-selection.ts</code><br><span class="mini">业务命中判断</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>canvas-hit-resolver.ts</code><br><span class="mini">节点与图层命中</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><code>selectable-hit-policy.ts</code><br><span class="mini">候选优先级</span></div>
+        </div>
+        <p>普通指针工具与覆盖层命中是两条并列链路。<code>pointer.tool.ts</code> 本身不解析命中，只负责把进入、退出、按下、移动、抬起、离开和双击事件转发给指针交互控制器。</p>
+        <table>
+          <thead><tr><th>阶段</th><th>实际处理</th><th>命中用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>pointerDown</code></td><td><code>resolveSelectableBusinessId</code> 优先解析当前节点，必要时按指针坐标扫描图层</td><td>确定点击目标、图形拖拽候选和框选路径</td></tr>
+            <tr><td><code>pointerUp</code></td><td>使用按下阶段保存的 <code>targetId</code></td><td>执行图形或连线选择，空白处清空选区</td></tr>
+            <tr><td><code>doubleClick</code></td><td>再次通过 <code>resolveSelectableBusinessId</code> 解析目标</td><td>优先处理连线文本编辑，其余双击事件继续向外广播</td></tr>
+            <tr><td>拖拽开始</td><td>结合命中目标和有效图形策略判断是否启动直接图形拖拽</td><td>区分图形移动、框选和无动作路径</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>职责对照：</strong>普通指针链路解决“画布事件当前命中了哪个业务对象”；覆盖层链路解决“选中覆盖层挡住底图后，哪些底层命中可以透传，以及拖拽责任归谁”。两者共同复用 <code>canvas-hit-resolver.ts</code>；普通指针与多选覆盖层还通过 <code>selectable-hit-policy.ts</code> 统一连线、包含关系、嵌套关系和面积的候选优先级，但覆盖层透传仍保留独立策略。
+        </div>
+      </section>
+
+      <section id="result">
+        <h2>3. 命中结果模型</h2>
+        <table>
+          <thead><tr><th>结果类型</th><th>携带标识</th><th>业务含义</th><th>典型动作</th></tr></thead>
+          <tbody>
+            <tr><td><code>none</code></td><td>无</td><td>覆盖层下方没有可消费的业务命中</td><td>保留覆盖层所有者的默认点击/拖拽语义</td></tr>
+            <tr><td><code>shape</code></td><td><code>shapeId</code></td><td>命中普通图形或嵌套图形本体</td><td>切换选择目标，或为内部图形建立拖拽候选</td></tr>
+            <tr><td><code>line</code></td><td><code>lineId</code></td><td>命中连线</td><td>选择连线、抑制图形覆盖层拖拽、双击进入连线文本编辑</td></tr>
+            <tr><td><code>rich-text-tag</code></td><td><code>shapeId</code>、<code>tagId</code></td><td>命中富文本中的业务标签</td><td>转发标签点击、追加选择或标签动作</td></tr>
+            <tr><td><code>rich-text-condition</code></td><td><code>shapeId</code>、<code>conditionUid</code></td><td>命中条件片段</td><td>双击打开当前图形的条件编辑器；单击通常保持图形语义</td></tr>
+            <tr><td><code>rich-text-text</code></td><td><code>shapeId</code></td><td>命中普通富文本内容</td><td>抑制覆盖层拖拽，双击回到图形编辑语义</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="scenarios">
+        <h2>4. 当前命中检测场景</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>场景一：选中区域命中区域内部图形</h3>
+            <p>覆盖层所有者是区域，底层候选是区域内容图形。若候选通过统一范围规则且图形可移动，组件先切换选中目标，再为内部图形创建拖拽候选，不拖动区域本体。</p>
+            <p><strong>行为要求：</strong>区域作为容器时，内部图形必须先被选中，再被直接移动，不能被区域覆盖层吞掉。</p>
+          </article>
+          <article class="card">
+            <h3>场景二：选中图形命中内部候选</h3>
+            <p>所有图类型统一按领域父子关系或边界完全包含允许普通图形透传。这样功能图支持真实嵌套和视觉嵌套，区域图类型也无需额外建立父子关系即可识别区域内的视觉嵌套图形。</p>
+            <p><strong>行为要求：</strong>已选中的图形不应阻挡同一语义范围内内部图形的选择、拖拽和后续编辑；命中内部图形时必须先切换选中态，再启动内部图形拖拽。</p>
+          </article>
+          <article class="card">
+            <h3>场景二补充：连线穿过选中图形</h3>
+            <p>普通图形处于选中状态时，覆盖层命中解析先按当前业务坐标判断可选连线是否经过指针位置，再解析内部图形。连线命中优先于图形包含关系，避免连线被选中图形本体或内部图形候选遮蔽。</p>
+            <p><strong>单击行为：</strong>命中连线后先将连线写入选区并显示连线选中覆盖层，再抑制当前图形覆盖层的拖拽；不能只抑制拖拽而跳过连线选择。</p>
+          </article>
+          <article class="card">
+            <h3>场景三：命中覆盖层所有者本体</h3>
+            <p>普通图形本体候选若与覆盖层所有者相同，会被过滤。这样不会把覆盖层自身的点击误解释为底层重复命中。</p>
+            <p><strong>行为要求：</strong>点击选中图形的空白或本体区域，应继续由当前覆盖层处理选择保持、移动或双击编辑。</p>
+          </article>
+          <article class="card">
+            <h3>场景四：命中所有者自己的富文本标签</h3>
+            <p>所有者本体会被过滤，但所有者自己的富文本标签、条件片段和文本片段被特意保留。</p>
+            <p><strong>行为要求：</strong>富文本交互优先于图形覆盖层本体，标签点击不能被当作普通图形点击。</p>
+          </article>
+          <article class="card">
+            <h3>场景五：命中连线</h3>
+            <p>连线不属于图形祖先关系判断，命中后作为独立业务对象保留。拖拽意图会抑制当前图形或区域覆盖层拖拽，双击交给连线编辑。</p>
+            <p><strong>行为要求：</strong>连线位于覆盖层下方时仍可被选择和编辑，不能因覆盖层存在而移动图形。</p>
+          </article>
+          <article class="card">
+            <h3>场景六：命中无候选或不允许透传的候选</h3>
+            <p>无命中时返回 <code>none</code>。父级、兄弟级、仅发生部分重叠或不满足领域后代与几何包含条件的图形不允许穿透。</p>
+            <p><strong>交互要求：</strong>覆盖层只能向当前所有者范围内的业务对象透传，不能误选无关重叠对象。</p>
+          </article>
+          <article class="card">
+            <h3>场景七：选中对象优先拖拽</h3>
+            <p><code>resolveOverlayDragIntent</code> 会先检查候选中是否有当前已选中的图形或连线。若有，则返回 <code>drag-selected-target</code>，避免拖拽时重新解释为覆盖层所有者拖拽。</p>
+            <p><strong>行为要求：</strong>多选或覆盖层重叠时，拖拽应优先保持当前选区语义，避免拖错对象。</p>
+          </article>
+          <article class="card">
+            <h3>场景八：富文本命中导致覆盖层拖拽抑制</h3>
+            <p>图形所有者命中标签、条件或普通文本时返回 <code>suppress-current-overlay-drag</code>；区域所有者命中这些内容通常由内部图形分支处理。</p>
+            <p><strong>行为要求：</strong>用户在文本内容上点击或开始拖动时，应优先保留文本交互，不产生图形位移。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="rules">
+        <h2>5. 规则与优先级</h2>
+        <h3>5.1 透传资格</h3>
+        <ol>
+          <li>候选是覆盖层所有者本体：不允许透传。</li>
+          <li>候选是所有者自己的富文本标签、条件或文本：允许保留，交给富文本语义处理。</li>
+            <li>候选是图形且属于所有者的领域后代，或候选边界完全位于所有者边界内：允许透传。</li>
+            <li>候选是父级、兄弟级、仅部分重叠或不满足上述范围条件的图形：禁止透传。</li>
+          <li>连线不使用图形祖先关系过滤，由上层拖拽和双击规则决定是否消费。</li>
+        </ol>
+        <h3>5.2 候选排序</h3>
+        <p>覆盖层候选按以下优先级排序，数字越大越优先：</p>
+        <table>
+          <thead><tr><th>优先级</th><th>类型</th><th>原因</th></tr></thead>
+          <tbody>
+            <tr><td>5</td><td><code>line</code></td><td>连线是独立可编辑对象，避免被图形本体吞掉</td></tr>
+            <tr><td>4</td><td><code>rich-text-condition</code></td><td>条件片段具有专门编辑语义</td></tr>
+            <tr><td>3</td><td><code>rich-text-tag</code></td><td>标签点击需要转发给富文本控制器</td></tr>
+            <tr><td>2</td><td><code>rich-text-text</code></td><td>文本内容应阻止覆盖层拖拽</td></tr>
+            <tr><td>1</td><td><code>shape</code></td><td>普通图形作为最后的底层业务候选</td></tr>
+          </tbody>
+        </table>
+        <p>同类候选继续按 <code>zIndex</code>、包含深度和命中顺序排序。结果在底层命中解析阶段按业务标识去重。</p>
+      </section>
+
+      <section id="requirements">
+        <h2>6. 现行行为清单</h2>
+        <table>
+          <thead><tr><th>行为编号</th><th>交互场景</th><th>系统行为</th><th>实现状态</th></tr></thead>
+          <tbody>
+            <tr><td>R1</td><td>点击已选图形空白处</td><td>保持当前图形语义，不误选底层自身</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R2</td><td>点击区域内部图形</td><td>先选中内部图形，再建立内部图形拖拽，区域不抢占</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R3</td><td>点击父图形覆盖层下的内部图形</td><td>按领域后代或几何包含透传，先切换选中，再拖拽内部图形</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R4</td><td>点击或拖动富文本标签</td><td>转发标签动作，禁止图形位移</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R5</td><td>双击条件片段</td><td>打开当前所有者的条件编辑器</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R6</td><td>双击连线或连线文本</td><td>进入连线文本编辑，且混合选区时遵守限制</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R7</td><td>多选框按住追加键点击内部对象</td><td>选择最内层可选对象；必要时使用画布命中兜底</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R8</td><td>大规模节点下单击覆盖层</td><td>优先单点逐图层命中，避免全量交集扫描</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R9</td><td>无法取得指针坐标的事件</td><td>明确按空命中处理，不触发昂贵的全量扫描</td><td><span class="status green">已覆盖</span></td></tr>
+            <tr><td>R10</td><td>嵌套关系异常或形成环</td><td>祖先判断不能死循环，异常候选应拒绝透传</td><td><span class="status green">已覆盖</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="boundaries">
+        <h2>7. 实现边界</h2>
+        <div class="callout warn"><strong>注意：</strong><code>overlay-hit.ts</code> 只负责覆盖层候选过滤、排序和拖拽意图，不负责所有命中兜底。将区域后代几何命中、富文本索引命中或多选框命中规则强行塞入此文件，会扩大其职责并增加排序冲突。</div>
+        <ul>
+          <li><strong>区域几何兜底：</strong>选中区域单点命中为 <code>none</code> 时，由 <code>regionHitResolver</code> 继续解析区域内容；普通图形候选则由统一范围规则补出领域后代或几何包含命中。</li>
+          <li><strong>富文本索引兜底：</strong>部分图形的富文本画布位于覆盖层之下或命中矩形不完整，组件会调用 <code>resolveCanvasRichTextTagAtPoint</code> 补出标签命中。</li>
+          <li><strong>多选框选择：</strong>非追加点击保持多选框整体拖拽；追加点击使用最内层可选图形解析，不等同于普通单对象覆盖层透传。</li>
+          <li><strong>权限与可移动性：</strong>命中检测本身只返回语义候选；是否建立图形拖拽候选由调用方结合有效图形策略判断。</li>
+          <li><strong>事件坐标：</strong>语义命中必须使用明确的指针坐标并走逐图层单点命中；无坐标时显式返回 <code>none</code>，避免一次事件触发全量 <code>getAllIntersections</code>。</li>
+        </ul>
+      </section>
+
+      <section id="matrix">
+        <h2>8. 行为矩阵</h2>
+        <p>以下矩阵描述当前命中结果与对应交互动作。</p>
+        <table>
+          <thead><tr><th>所有者</th><th>底层命中</th><th>预期结果</th><th>预期交互</th></tr></thead>
+          <tbody>
+            <tr><td>区域</td><td>区域内部可移动图形</td><td><code>shape</code></td><td>先选中内部图形，再建立拖拽候选</td></tr>
+            <tr><td>图形</td><td>后代或几何包含图形</td><td><code>shape</code></td><td>先选中内部图形，再建立拖拽候选</td></tr>
+            <tr><td>图形</td><td>所有者本体</td><td><code>none</code> 或所有者富文本结果</td><td>所有者覆盖层继续处理</td></tr>
+            <tr><td>图形</td><td>所有者标签</td><td><code>rich-text-tag</code></td><td>转发标签动作，抑制拖拽</td></tr>
+            <tr><td>普通图形</td><td>穿过图形的连线</td><td><code>line</code></td><td>单击先选中连线并抑制图形拖拽，双击可编辑连线</td></tr>
+            <tr><td>区域</td><td>区域范围内连线</td><td><code>line</code></td><td>按区域连线范围规则处理，抑制区域拖拽，双击可编辑连线</td></tr>
+            <tr><td>图形</td><td>父级或兄弟图形</td><td><code>none</code></td><td>不发生错误透传</td></tr>
+            <tr><td>任意</td><td>当前已选中的候选</td><td>候选保留</td><td>拖拽优先返回 <code>drag-selected-target</code></td></tr>
+            <tr><td>任意</td><td>空白</td><td><code>none</code></td><td>允许所有者默认拖拽或点击</td></tr>
+          </tbody>
+        </table>
+        <p class="source">相关实现：<code>ui/canvas/selection/overlay-hit.ts</code>、<code>ui/canvas/selection/selection-overlay-interaction.ts</code>、<code>ui/canvas/selection/SelectionLayer.vue</code>。</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
