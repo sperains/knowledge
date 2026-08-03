@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Late Signal — 城市夜间电台</title>
+  <style>
+    :root {
+      --paper: #fff4dd; --ink: #26201a; --ink-2: #5c5347; --ink-3: #877b6b;
+      --accent: #ff5c2b; --sun: #ffd84d; --rose: #ffb9cc; --sky: #a5dcff;
+      --card: #fffdf7; --empty: #f1e3c4; --border: 2px solid var(--ink);
+      --shadow: 4px 4px 0 var(--ink); --shadow-sm: 3px 3px 0 var(--ink);
+      --radius: 14px; --display: "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+      --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+    body { background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+    body::before { content: ""; position: fixed; inset: 0; opacity: .12; pointer-events: none; background-image: radial-gradient(#8b7659 .6px, transparent .6px); background-size: 7px 7px; mix-blend-mode: multiply; }
+    .page { max-width: 880px; margin: 0 auto; padding: 0 24px 72px; }
+    a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+    a:hover { color: var(--accent); }
+    button, input { font: inherit; }
+    .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .eyebrow { font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+
+    header { display: flex; align-items: center; gap: 14px; padding: 34px 0 10px; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .avatar { width: 48px; height: 48px; display: grid; place-items: center; border: var(--border); border-radius: 50%; background: var(--accent); box-shadow: var(--shadow-sm); transform: rotate(-4deg); font: 800 17px var(--display); }
+    .brand:hover .avatar { transform: rotate(4deg) scale(1.06); }
+    h1, h2, h3 { font-family: var(--display); font-weight: 800; }
+    h1 { margin: 0; font-size: clamp(28px, 4.5vw, 36px); line-height: 1.05; letter-spacing: -.02em; }
+    .tagline { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; font-style: italic; }
+
+    .hero { padding-top: 26px; }
+    .explainer { max-width: 58ch; margin: 0 0 16px; color: var(--ink-2); font-size: 17px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 36px; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 8px 14px; border: var(--border); border-radius: 999px; color: var(--ink); box-shadow: var(--shadow-sm); font: 700 14px/1.2 var(--display); cursor: pointer; transition: transform .1s, box-shadow .1s; }
+    .pill:hover { transform: translateY(-1px) rotate(-1deg); }
+    .pill:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+    .pill.sun { background: var(--sun); } .pill.card { background: var(--card); } .pill.rose { background: var(--rose); } .pill.sky { background: var(--sky); }
+    .hero-card { padding: 26px 30px 30px; border: var(--border); border-radius: var(--radius); background: var(--card); background-image: radial-gradient(rgba(38,32,26,.1) 1.5px, transparent 1.5px); background-size: 18px 18px; box-shadow: 6px 6px 0 var(--ink); transform: rotate(-.4deg); }
+    .hero-label { display: block; margin-bottom: 14px; color: var(--ink-2); font: 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .hero-figure { display: inline-block; padding: 0 16px 4px; border: 0; border-radius: 10px; background: var(--sun); transform: rotate(-1.2deg); font: 800 clamp(40px, 7.5vw, 68px)/1.05 var(--display); letter-spacing: -.02em; }
+    .hero-sub { margin: 14px 0 0; color: var(--ink-3); font: 13px var(--mono); }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 28px 0 62px; }
+    .tile { min-height: 128px; padding: 18px 20px; border: var(--border); border-radius: var(--radius); box-shadow: var(--shadow); transform: rotate(-.7deg); }
+    .tile:nth-child(2) { background: var(--rose); transform: rotate(.8deg); } .tile:nth-child(3) { background: var(--sky); transform: rotate(-.5deg); }
+    .tile:first-child { background: var(--sun); }
+    .tile .label { font: 700 12px var(--display); } .tile .number { margin-top: 11px; font: 800 42px/1 var(--mono); letter-spacing: -.08em; }
+
+    .section { margin-top: 52px; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    h2 { margin: 0; font-size: clamp(24px, 4vw, 30px); line-height: 1.1; }
+    .section-sub { margin: 0; color: var(--ink-2); font-size: 13px; }
+    .graph-card { overflow-x: auto; padding: 24px; border: var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--shadow); }
+    .graph { min-width: 640px; }
+    .months { display: grid; grid-template-columns: repeat(8, 1fr); margin-left: 42px; color: var(--ink-3); font: 11px var(--mono); }
+    .heatmap { display: grid; grid-template-columns: 32px repeat(28, 18px); grid-template-rows: repeat(7, 18px); gap: 5px; margin-top: 5px; }
+    .weekday { align-self: center; color: var(--ink-3); font: 10px var(--mono); }
+    .cell { width: 18px; height: 18px; border: 1px solid rgba(38,32,26,.14); border-radius: 5px; background: var(--empty); cursor: pointer; transition: transform .15s cubic-bezier(.34,1.56,.64,1); }
+    .cell:hover { transform: scale(1.35) rotate(-4deg); border-color: var(--ink); }
+    .cell.hit { background: var(--accent); } .cell.hit.soft { background: #ff9a74; }
+
+    .dialog-list { display: flex; flex-direction: column; gap: 22px; }
+    .dialog-item { display: flex; align-items: flex-start; gap: 14px; }
+    .dialog-avatar { flex: none; width: 44px; height: 44px; display: grid; place-items: center; margin-top: 4px; border: var(--border); border-radius: 50%; background: var(--accent); box-shadow: 2px 2px 0 var(--ink); font: 800 13px var(--display); transform: rotate(-4deg); }
+    .dialog-item:nth-child(2) .dialog-avatar { background: var(--rose); transform: rotate(4deg); }
+    .dialog-item:nth-child(3) .dialog-avatar { background: var(--sky); transform: rotate(-2deg); }
+    .dialog-bubble { position: relative; flex: 1; min-width: 0; padding: 14px 18px; border: var(--border); border-radius: 16px; background: var(--card); box-shadow: var(--shadow); }
+    .dialog-item:nth-child(2) .dialog-bubble { background: var(--rose); transform: rotate(-.35deg); }
+    .dialog-item:nth-child(3) .dialog-bubble { background: var(--sky); transform: rotate(.35deg); }
+    .dialog-bubble::before { content: ""; position: absolute; left: -8px; top: 18px; width: 13px; height: 13px; background: inherit; border-left: var(--border); border-bottom: var(--border); transform: rotate(45deg); }
+    .dialog-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .dialog-time { padding: 1px 10px 2px; border: 1.5px solid var(--ink); border-radius: 999px; background: var(--sun); font: 700 14px/1.2 var(--display); }
+    .dialog-absolute { color: var(--ink-3); font: 11px var(--mono); }
+    .dialog-bubble p { max-width: 72ch; margin: 0; color: var(--ink); font-size: 16px; }
+    .dialog-link { display: inline-block; margin-top: 10px; font: 12px var(--mono); }
+
+    footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 48px; color: var(--ink-3); font: 11px/1.6 var(--mono); }
+    @media (max-width: 640px) { .page { padding-inline: 16px; } .stats { grid-template-columns: 1fr; gap: 13px; } .tile { min-height: 106px; } .section-head { display: block; } .section-sub { margin-top: 8px; } footer { display: block; } footer span { display: block; margin-top: 8px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a class="brand" href="#top"><span class="avatar">LS</span><span><h1>Late Signal</h1><p class="tagline">The most important sound after midnight</p></span></a>
+    </header>
+    <main id="top">
+      <section class="hero">
+        <p class="explainer">城市夜间电台只在 <a href="#archive">夜里的人</a> 还醒着时说话。我们记录凌晨的声音，所以你不用一直盯着窗外。</p>
+        <div class="actions"><button class="pill sun" id="listen">◉ listen</button><button class="pill card" id="telegram">↗ telegram</button><button class="pill rose" id="email">✉ email</button></div>
+        <div class="hero-card"><span class="hero-label">Time since the last transmission</span><span class="hero-figure">2 nights ago</span><p class="hero-sub">last signal: 2026-08-01 02:44 · utc+8</p></div>
+      </section>
+
+      <div class="stats">
+        <div class="tile"><div class="label">Transmissions</div><div class="number">42</div></div>
+        <div class="tile"><div class="label">Avg. quiet hour</div><div class="number">02:18</div></div>
+        <div class="tile"><div class="label">Longest silence</div><div class="number">67.7h</div></div>
+      </div>
+
+      <section class="section" id="schedule"><div class="section-head"><h2>The waiting game</h2><p class="section-sub">Last 26 weeks · <span style="color:var(--accent)">■</span> signal · <span style="color:var(--empty)">■</span> silence</p></div><div class="graph-card"><div class="graph"><div class="months"><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span></div><div class="heatmap" id="heatmap"></div></div></div></section>
+
+      <section class="section" id="archive"><div class="section-head"><h2>In its own words</h2><p class="section-sub">Every transmission, preserved for history</p></div><div class="dialog-list"><article class="dialog-item"><div class="dialog-avatar">LS</div><div class="dialog-bubble"><div class="dialog-meta"><span class="dialog-time">2026-08-01</span><span class="dialog-absolute">02:44 / utc+8</span></div><p>雨落在高架桥上，像一段没有结尾的鼓点。我们假装这是一种希望。</p><a class="dialog-link" href="#">view source ↗</a></div></article><article class="dialog-item"><div class="dialog-avatar">LS</div><div class="dialog-bubble"><div class="dialog-meta"><span class="dialog-time">2026-07-29</span><span class="dialog-absolute">03:12 / utc+8</span></div><p>便利店的灯还亮着。今晚的风从南边来，带着一点还没结束的夏天。</p><a class="dialog-link" href="#">view source ↗</a></div></article><article class="dialog-item"><div class="dialog-avatar">LS</div><div class="dialog-bubble"><div class="dialog-meta"><span class="dialog-time">2026-07-25</span><span class="dialog-absolute">04:03 / utc+8</span></div><p>太阳还有 17 分钟。先不要关掉这盏灯。</p><a class="dialog-link" href="#">view source ↗</a></div></article></div></section>
+    </main>
+    <footer><span>data sourced from the city after midnight</span><span>classified by a cron that takes this seriously<br>not affiliated with sleep</span></footer>
+  </div>
+  <script>
+    const heatmap = document.querySelector('#heatmap');
+    const labels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+    for (let row = 0; row < 7; row++) { const l = document.createElement('span'); l.className = 'weekday'; l.textContent = labels[row]; l.style.gridRow = row + 1; l.style.gridColumn = 1; heatmap.append(l); for (let col = 0; col < 28; col++) { const cell = document.createElement('button'); cell.className = 'cell' + ((col * 5 + row * 3) % 17 === 0 ? ' hit' : (col + row) % 11 === 0 ? ' hit soft' : ''); cell.style.gridColumn = col + 2; cell.style.gridRow = row + 1; cell.title = `${2026}-${String(Math.floor(col / 4) + 2).padStart(2, '0')}-${row + 1}`; heatmap.append(cell); } }
+    document.querySelector('#listen').addEventListener('click', e => { e.currentTarget.textContent = '● now listening'; e.currentTarget.classList.remove('sun'); e.currentTarget.classList.add('sky'); });
+    document.querySelector('#telegram').addEventListener('click', e => { e.currentTarget.textContent = '↗ signal sent'; });
+    document.querySelector('#email').addEventListener('click', e => { e.currentTarget.textContent = '✉ you are on the list'; e.currentTarget.classList.remove('rose'); e.currentTarget.classList.add('sky'); });
+  </script>
+</body>
+</html>

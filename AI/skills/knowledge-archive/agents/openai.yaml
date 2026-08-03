@@ -1,0 +1,4 @@
+interface:
+  display_name: "knowledge-archive"
+  short_description: "将已确认的结论归档到结构化知识库"
+  default_prompt: "使用 $knowledge-archive 检查当前对话，并归档其中已确认且可复用的结论。"

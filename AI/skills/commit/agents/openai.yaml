@@ -1,0 +1,4 @@
+interface:
+  display_name: "commit"
+  short_description: "检查范围并安全创建 Git 提交"
+  default_prompt: "使用 $commit 检查当前工作区，排除无关改动，并按项目规范创建提交。"
