@@ -519,7 +519,7 @@ interface ShapeResizeUpdatePayload {
 }
 ```
 
-`update` 中的 bounds 必须是发起端执行完 `clampShapeResize`、用户图形归一化和现有边界规则后的结果。远端只渲染目标边界和半透明图形预览，不写正式 Store，也不重复推导区域扩容和包含关系。
+`update` 中的 bounds 必须是发起端执行完图形尺寸约束、用户图形归一化和现有边界规则后的结果。远端只渲染目标边界和半透明图形预览，不写正式 Store，也不重复推导区域扩容和包含关系。
 
 本地 resize 仍可按当前逻辑更新本地 Store 以保持交互行为不变，但 `useCollabSync` 必须阻止下列旧过程帧进入正式协作发送：
 

@@ -26,7 +26,7 @@ shape.height = 头像区域、固定间隔和文本区域的总高度
 
 固定间隔只表达头像和文本之间的距离，不再把文本预留高度和间隔混为一个常量。
 
-建议常量：
+实现常量：
 
 ```ts
 export const USER_AVATAR_TEXT_GAP = 4;
@@ -49,6 +49,8 @@ shape.width + USER_AVATAR_TEXT_GAP + USER_DEFAULT_TEXT_HEIGHT
 - 不区分边角控制点和边中控制点，不增加额外缩放模式；
 - 仅保留最小尺寸约束，避免头像或图形出现零尺寸。
 
+当前用户图形头像和宽度的最小尺寸为 20，整体高度仍至少为 `width + USER_AVATAR_TEXT_GAP + USER_DEFAULT_TEXT_HEIGHT`。
+
 用户文本超出当前文本区域时，暂时保持裁剪或隐藏状态。用户手动增加宽度或高度后，文本区域随图形扩大并显示更多内容。
 
 ## 4. 渲染约束
@@ -65,25 +67,13 @@ shape.width + USER_AVATAR_TEXT_GAP + USER_DEFAULT_TEXT_HEIGHT
 
 ## 5. 兼容性
 
-现有用户图形已经使用 `shape.width` 作为头像尺寸，因此不需要新增字段或数据迁移。
-
-历史数据只需要继续保证：
-
-```ts
-shape.height >= shape.width + USER_AVATAR_TEXT_GAP + USER_DEFAULT_TEXT_HEIGHT
-```
-
-当历史数据高度不足时，按默认文本区域高度补足为：
-
-```ts
-shape.width + USER_AVATAR_TEXT_GAP + USER_DEFAULT_TEXT_HEIGHT
-```
+现有用户图形已经使用 `shape.width` 作为头像尺寸，因此不需要新增字段或数据迁移。本次只约束当前绘制、缩放和拖拽创建入口，不主动修正历史数据。
 
 ## 6. 实施范围
 
 1. 统一领域层和界面层的用户图形几何常量与文本区域计算。
 2. 移除缩放规则中“头像尺寸决定整体高度”的强绑定。
-3. 调整用户图形默认尺寸和历史数据高度归一化逻辑。
+3. 调整用户图形默认尺寸和当前交互入口的最小尺寸约束。
 4. 保持文本编辑、协作同步、连线端点、选中框和删除逻辑不变。
 5. 在 `icce/tests` 下使用 Vitest 验证几何计算、默认尺寸和缩放约束。
 
