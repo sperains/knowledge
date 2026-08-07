@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>远端选中态 / 过程协作协议</title>
+  <style>
+    :root {
+      --paper: #fffdf7;
+      --ink: #25252a;
+      --muted: #6f7079;
+      --line: #29292e;
+      --pink: #ff8fa6;
+      --pink-soft: #ffe4ea;
+      --blue: #78c9db;
+      --blue-soft: #dff4f7;
+      --yellow: #ffd86e;
+      --yellow-soft: #fff3c7;
+      --green: #a7d89c;
+      --green-soft: #e8f6e1;
+      --purple: #bba9e9;
+      --shadow: 5px 6px 0 rgba(37, 37, 42, .12);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#e8d9ca 1px, transparent 1px), linear-gradient(90deg, transparent 49%, rgba(255,255,255,.55) 50%, transparent 51%);
+      background-size: 18px 18px, 100% 100%;
+      font-family: "Hiragino Maru Gothic ProN", "PingFang SC", "Kaiti SC", sans-serif;
+      line-height: 1.65;
+    }
+    body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .24; background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(70,50,40,.025) 4px); mix-blend-mode: multiply; }
+    .wrap { width: min(1180px, calc(100% - 36px)); margin: 0 auto; padding: 34px 0 70px; }
+    .hero { position: relative; padding: 44px 46px 38px; border: 3px solid var(--line); border-radius: 34px 28px 38px 25px; background: #fff8dc; box-shadow: 9px 10px 0 var(--pink); overflow: hidden; }
+    .hero::after { content: "✦"; position: absolute; right: 46px; top: 22px; color: var(--pink); font-size: 76px; transform: rotate(14deg); }
+    .eyebrow { display: inline-block; padding: 3px 14px; border: 2px solid var(--line); border-radius: 999px; background: var(--blue-soft); font-size: 13px; letter-spacing: .12em; transform: rotate(-2deg); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 760px; margin: 18px 0 9px; font-family: "Kaiti SC", "STKaiti", cursive; font-size: clamp(38px, 6vw, 72px); line-height: 1.05; letter-spacing: .02em; }
+    .hero p { max-width: 720px; margin-bottom: 0; font-size: 17px; }
+    .sticker { position: absolute; right: 52px; bottom: 28px; padding: 10px 15px; background: white; border: 2px solid var(--line); border-radius: 14px; box-shadow: 3px 4px 0 var(--line); font-size: 13px; transform: rotate(5deg); }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 32px 0 25px; }
+    .nav a { color: var(--ink); padding: 8px 14px; border: 2px solid var(--line); border-radius: 999px; background: white; text-decoration: none; box-shadow: 2px 3px 0 var(--line); font-size: 14px; transition: transform .2s, background .2s; }
+    .nav a:hover { transform: translateY(-3px) rotate(-2deg); background: var(--yellow-soft); }
+    .section { margin-top: 36px; scroll-margin-top: 18px; }
+    .section-title { display: flex; align-items: center; gap: 12px; margin-bottom: 17px; }
+    .section-title h2 { margin: 0; font-family: "Kaiti SC", "STKaiti", cursive; font-size: 30px; }
+    .section-title .num { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--line); border-radius: 48% 52% 45% 55%; background: var(--pink); font-weight: 800; transform: rotate(-8deg); }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .card { position: relative; grid-column: span 4; padding: 22px; border: 2px solid var(--line); border-radius: 20px 24px 18px 22px; background: rgba(255,255,255,.89); box-shadow: var(--shadow); }
+    .card.wide { grid-column: span 8; }
+    .card.full { grid-column: 1 / -1; }
+    .card.blue { background: var(--blue-soft); }
+    .card.yellow { background: var(--yellow-soft); }
+    .card.green { background: var(--green-soft); }
+    .card.pink { background: var(--pink-soft); }
+    .card h3 { margin-bottom: 8px; font-size: 20px; }
+    .card p { margin-bottom: 10px; color: #45464e; font-size: 14px; }
+    .label { display: inline-block; margin-bottom: 12px; padding: 2px 10px; border: 1.5px solid var(--line); border-radius: 999px; background: white; font-size: 12px; }
+    .rule { margin: 10px 0 0; padding-left: 20px; font-size: 14px; }
+    .rule li { margin: 5px 0; }
+    .rule li::marker { content: "✦  "; color: var(--pink); }
+    .state-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+    .state { position: relative; min-height: 118px; padding: 13px 11px; border: 2px dashed var(--line); border-radius: 17px; background: white; text-align: center; }
+    .state::before { content: ""; display: block; width: 43px; height: 32px; margin: 0 auto 8px; border: 3px solid var(--pink); border-radius: 8px; box-shadow: 4px 4px 0 var(--pink-soft); }
+    .state strong { display: block; font-size: 15px; }
+    .state small { color: var(--muted); font-size: 11px; }
+    .flow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 15px; }
+    .step { flex: 1; min-height: 92px; padding: 12px; border: 2px solid var(--line); border-radius: 16px; background: white; text-align: center; }
+    .step b { display: block; font-family: "Kaiti SC", cursive; font-size: 19px; }
+    .step span { color: var(--muted); font-size: 12px; }
+    .arrow { color: var(--pink); font-size: 28px; font-weight: 800; }
+    .protocol { overflow: auto; margin: 12px 0 0; padding: 17px; border: 2px solid var(--line); border-radius: 16px; background: #29292e; color: #fff7d8; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.65; }
+    .key { color: #ffb7c5; } .str { color: #bfe8a8; } .numv { color: #ffdc7d; }
+    .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 13px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 12px; height: 12px; border: 1.5px solid var(--line); border-radius: 50%; display: inline-block; }
+    .dot.local { background: var(--pink); } .dot.remote { background: var(--blue); } .dot.preview { background: var(--yellow); } .dot.canonical { background: var(--green); }
+    .note { margin-top: 13px; padding: 12px 14px; border-left: 5px solid var(--pink); border-radius: 0 12px 12px 0; background: rgba(255,255,255,.7); font-size: 13px; }
+    .footer { margin-top: 44px; padding: 22px; border-top: 2px dashed var(--line); color: var(--muted); text-align: center; font-size: 13px; }
+    @media (max-width: 800px) { .wrap { width: min(100% - 22px, 680px); padding-top: 16px; } .hero { padding: 30px 24px 90px; } .hero::after { right: 22px; } .sticker { right: 23px; } .card, .card.wide { grid-column: 1 / -1; } .state-row { grid-template-columns: repeat(2, 1fr); } .flow { align-items: stretch; flex-direction: column; } .arrow { text-align: center; transform: rotate(90deg); height: 18px; } }
+    @media (prefers-reduced-motion: no-preference) { .hero, .card { animation: pop .55s both; } .card:nth-child(2) { animation-delay: .08s; } .card:nth-child(3) { animation-delay: .16s; } @keyframes pop { from { opacity: 0; transform: translateY(10px) rotate(.5deg); } to { opacity: 1; transform: none; } } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <span class="eyebrow">ICCE · 协作知识卡片</span>
+      <h1>远端选中态<br />与过程协作协议</h1>
+      <p>把“谁选中了什么”与“谁正在做什么”分开表达：选中态是用户级快照，过程协作是可清理的临时预览，正式结果仍由应用命令和事务负责。</p>
+      <span class="sticker">轻量 · 可覆盖 · 不污染正式状态</span>
+    </header>
+
+    <nav class="nav" aria-label="页面导航">
+      <a href="#boundary">状态边界</a><a href="#selection">远端选中态</a><a href="#interaction">过程协作</a><a href="#protocol">协议骨架</a><a href="#rules">落地规则</a>
+    </nav>
+
+    <section id="boundary" class="section">
+      <div class="section-title"><span class="num">01</span><h2>先分清：快照 ≠ 过程</h2></div>
+      <div class="grid">
+        <article class="card pink"><span class="label">selection</span><h3>远端选中态</h3><p>表达某位协作者当前选中的图形与连线，是用户级、可覆盖的完整快照。</p><ul class="rule"><li>按用户隔离保存</li><li>新快照覆盖旧快照</li><li>空数组明确表示清空</li></ul></article>
+        <article class="card yellow"><span class="label">interaction</span><h3>过程协作</h3><p>表达绘制、移动、缩放、框选中的临时状态，是一次交互会话的预览。</p><ul class="rule"><li>使用 sessionId 分组</li><li>update 可丢帧、只留最新</li><li>结束时 commit / reset 清理</li></ul></article>
+        <article class="card green"><span class="label">canonical</span><h3>正式结果</h3><p>表达已经确认并进入业务模型的变化，由应用命令、领域规则和事务同步负责。</p><ul class="rule"><li>不依赖远端预览</li><li>包含真实受影响范围</li><li>以最终提交态为准</li></ul></article>
+      </div>
+    </section>
+
+    <section id="selection" class="section">
+      <div class="section-title"><span class="num">02</span><h2>远端选中态：像一张“用户名片”</h2></div>
+      <div class="grid">
+        <article class="card wide blue">
+          <h3>视觉表达</h3>
+          <div class="state-row"><div class="state"><strong>本地选中</strong><small>高对比描边 + 操作手柄</small></div><div class="state"><strong>远端选中</strong><small>用户颜色轮廓</small></div><div class="state"><strong>远端框选</strong><small>半透明框 + 用户标记</small></div><div class="state"><strong>已清空</strong><small>移除轮廓，不留残影</small></div></div>
+          <div class="legend"><span><i class="dot local"></i>本地交互层</span><span><i class="dot remote"></i>远端用户层</span><span><i class="dot preview"></i>临时预览层</span><span><i class="dot canonical"></i>正式数据层</span></div>
+        </article>
+        <article class="card"><h3>数据只传 ID</h3><p>远端渲染时按 ID 从本地正式图形和连线中取最新几何，避免完整业务对象成为长期数据源。</p><div class="note">找不到对象时跳过该轮廓；不要写入本地正式 Store，也不要根据包围盒重新推导成员。</div></article>
+      </div>
+      <div class="card full" style="margin-top:18px;">
+        <h3>选中快照的最小结构</h3>
+        <pre class="protocol">{
+  <span class="key">"selection"</span>: {
+    <span class="key">"shapeIds"</span>: [<span class="str">"shape-a"</span>, <span class="str">"shape-b"</span>],
+    <span class="key">"lineIds"</span>: [<span class="str">"line-7"</span>]
+  }
+}</pre>
+        <p class="note">发送完整快照，不使用 sessionId；shapeIds 和 lineIds 同时为空时，删除该用户的远端选中状态。</p>
+      </div>
+    </section>
+
+    <section id="interaction" class="section">
+      <div class="section-title"><span class="num">03</span><h2>过程协作：一条可回收的小纸带</h2></div>
+      <div class="card full yellow">
+        <div class="flow"><div class="step"><b>start</b><span>建立会话<br />发送初始边界 / 目标</span></div><span class="arrow">→</span><div class="step"><b>update × N</b><span>发送最新状态<br />允许丢帧</span></div><span class="arrow">→</span><div class="step"><b>commit</b><span>过程结束<br />等待正式结果</span></div><span class="arrow">→</span><div class="step"><b>cleanup</b><span>清理远端预览<br />不回写本地选择</span></div></div>
+        <div class="note"><strong>异常路径：</strong>断线、离开、超时、工具切换、操作失败 → reset / expire → cleanup。reset 只清理未完成过程态，不表达正式业务回滚。</div>
+      </div>
+      <div class="grid" style="margin-top:18px;">
+        <article class="card"><h3>移动</h3><p>start 携带目标图形编号和初始信息；update 只携带相对会话起点的总位移。</p><span class="label">dx / dy</span></article>
+        <article class="card"><h3>缩放</h3><p>start 携带目标与手柄；update 携带约束计算后的最新边界。</p><span class="label">bounds</span></article>
+        <article class="card"><h3>框选 / 绘制</h3><p>过程只展示边界或草稿，不提前创建正式图形，也不让远端推导最终成员。</p><span class="label">preview only</span></article>
+      </div>
+    </section>
+
+    <section id="protocol" class="section">
+      <div class="section-title"><span class="num">04</span><h2>协议骨架：同一条消息，三种语义</h2></div>
+      <div class="card full blue">
+        <pre class="protocol">{
+  <span class="key">"type"</span>: <span class="str">"drag"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"module"</span>: <span class="str">"icce"</span>,
+    <span class="key">"handleData"</span>: {
+      <span class="key">"add / modify / delete"</span>: <span class="str">"正式变更"</span>,
+      <span class="key">"selection"</span>: <span class="str">"用户级选中快照"</span>,
+      <span class="key">"interaction"</span>: {
+        <span class="key">"kind"</span>: <span class="str">"shape-move"</span>,
+        <span class="key">"phase"</span>: <span class="str">"start | update | commit | reset"</span>,
+        <span class="key">"sessionId"</span>: <span class="str">"一次过程会话"</span>
+      }
+    }
+  }
+}</pre>
+        <div class="legend"><span>空字段省略</span><span>过程几何在编码出口取整</span><span>用户信息由广播层附加</span></div>
+      </div>
+    </section>
+
+    <section id="rules" class="section">
+      <div class="section-title"><span class="num">05</span><h2>生成与实现时的共同约束</h2></div>
+      <div class="grid">
+        <article class="card pink"><h3>要画出来</h3><ul class="rule"><li>本地与远端使用不同颜色</li><li>轮廓、包围盒、用户小标签有清晰层次</li><li>start → update → commit / reset 方向明确</li><li>用贴纸、箭头和手写注释强化学习卡片感</li></ul></article>
+        <article class="card green"><h3>不要混在一起</h3><ul class="rule"><li>远端选中态不改本地选择</li><li>过程预览不写正式图形 Store</li><li>过程 session 不冒充业务 operation</li><li>不要用完整业务对象填充轻量协议</li></ul></article>
+        <article class="card yellow"><h3>一句话记忆</h3><p style="font-family:'Kaiti SC',cursive;font-size:25px;line-height:1.25;">选中态告诉你“他看着谁”，过程态告诉你“他正在做什么”，正式态才决定“最后变成什么”。</p></article>
+      </div>
+    </section>
+
+    <footer class="footer">日式可爱手绘知识卡片视觉语言 · 远端选中态 / 过程协作协议 · 仅表达视觉与协议边界，不复制具体业务版式</footer>
+  </main>
+</body>
+</html>

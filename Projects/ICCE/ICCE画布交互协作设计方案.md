@@ -29,13 +29,14 @@
 
 远端过程态由独立的协作状态和协作渲染层承载，不得写入本地 `selectionStore`、`previewStore` 或正式 `shapesStore`。
 
-当前首期实现三类过程态协作：
+当前首期实现四类过程态协作：
 
 1. 普通图形的拖拽绘制过程协作。
 2. 单图形 resize 过程协作。
 3. 框选过程协作。
+4. 单图形和多图形移动过程协作。
 
-已有图形移动、区域 resize、区域绘制、连线绘制、`selectionRef` 和超大选区优化仍不属于当前实现范围。
+区域 resize、区域绘制、连线绘制、`selectionRef` 和超大选区优化仍不属于当前实现范围。
 
 ## 3. 当前实现基线
 
@@ -83,11 +84,24 @@
 - 图形抬起并成功创建后才进入正式变更同步，远端临时节点不写入正式 Store。
 - 多名用户同时绘制时按用户和会话区分远端草稿。
 
-### 3.5 resize 过程写入正式状态
+### 3.5 单图形 resize 过程协作已闭环
 
-- resize 已具备 live/commit 语义，但 live 阶段仍更新正式图形 Store。
-- 远端接收过程帧后也会触发正式图形回放和相关渲染。
-- 缺少操作序号、基础版本和同目标冲突约束。
+- 本地 resize 过程仍按现有交互更新正式图形 Store，但正式协作发送会跳过 resize 的 live 完整图形消息。
+- 远端只接收轻量包围盒并更新独立预览 Store，不触发正式图形回放。
+- 最终尺寸和关联变化继续通过应用命令产生的提交态同步；操作序号、基础版本和同目标冲突约束仍待补充。
+
+### 3.6 图形移动过程协作已闭环
+
+- 移动开始时发送当前移动图形编号和相对会话起点的总位移，后续更新只发送最新总位移。
+- 远端过程态只更新独立预览 Store，不修改正式图形、连线、包含关系或本地选中状态。
+- 多图形移动预览同时显示各图形轮廓和移动后的联合包围盒；单图形移动不重复绘制整体框。
+- 最终位置、区域联动、连线和包含关系继续以应用命令产生的正式提交态为准。
+
+### 3.7 协作消息与几何精度已收敛
+
+- `handleData` 只发送当前消息实际需要的字段，空的新增、修改和删除数组在发送出口省略。
+- 旧的完整对象选中数组已经移除，远端选中结果统一由 `selection` 快照表达。
+- 过程态包围盒与移动位移在协议编码出口统一为整数；本地指针和约束计算过程仍可保留浮点精度。
 
 ## 4. 需求范围
 
@@ -114,7 +128,7 @@
 
 #### 框选过程协作
 
-- 框选开始时发送 `mode`、增量选择标记和初始 `bounds`。
+- 框选开始时发送增量选择标记和初始 `bounds`（`mode` 已移除，框选是当前唯一过程态选择方式）。
 - 框选更新时只发送当前最新 `bounds`，不发送实时对象列表。
 - 框选完成、工具切换或页面卸载时发送 `commit` 或 `reset` 清理远端预览。
 - 远端只渲染带用户颜色的框选矩形，不修改本地选择和正式图形状态。
@@ -275,16 +289,15 @@ interface DragMessage<TPayload = unknown> {
       user_id?: number | string;
     }; // 仅后台广播时附加
     handleData: {
-      add: unknown[];
-      modify: unknown[];
-      delete: unknown[];
-      select: unknown[];
+      add?: unknown[];
+      modify?: unknown[];
+      delete?: unknown[];
       selection?: {
         shapeIds: string[];
         lineIds: string[];
       };
       interaction?: {
-        kind: 'shape-drawing' | 'shape-resize' | 'selection';
+        kind: 'shape-drawing' | 'shape-resize' | 'shape-move' | 'selection';
         phase: 'start' | 'update' | 'commit' | 'reset';
         sessionId: string;
         // 过程预览直接携带所需的 bounds、坐标或图形类型
@@ -294,7 +307,9 @@ interface DragMessage<TPayload = unknown> {
 }
 ```
 
-过程消息发送时不携带 `user_id` 或 `user_info`，后台广播时会自动附加 `data.user_info`，接收端只取其中的 `user_id`。`selection` 是当前用户级选中状态快照，不使用 `sessionId`，每次发送完整的图形 ID 和连线 ID；空数组表示明确清空远端选区。`interaction` 是单个过程消息对象；旧处理器只读取既有的 `add`、`modify`、`select`、`delete` 数组并忽略新增字段。
+过程消息发送时不携带 `user_id` 或 `user_info`，后台广播时会自动附加 `data.user_info`，接收端只取其中的 `user_id`。`selection` 是当前用户级选中状态快照，不使用 `sessionId`，每次发送完整的图形 ID 和连线 ID；空数组表示明确清空远端选区。`interaction` 是单个过程消息对象。`handleData` 使用稀疏结构，只保留当前消息实际需要的字段；正式回放器只读取存在的 `add`、`modify`、`delete` 数组，过程态和选中态分别在进入正式回放器前处理。
+
+协议编码出口统一规范过程态几何：包围盒的坐标与尺寸、移动总位移均四舍五入为整数。该规则只约束传输数据，不要求本地指针事件和约束计算过程提前丢失精度。
 
 字段说明：
 
@@ -355,12 +370,13 @@ disconnect / leave / lease timeout / version rejected
 
 ### 7.1 框选过程
 
-start 发送选择模式和初始包围盒：
+interaction 的 `selection` kind 只服务「有过程态的选择方式」，当前唯一即框选；点选（单击，无过程态）直接更新选中集，由 `selection-store` 监听经 `handleData.selection` 同步（见 7.2）。
+
+start 发送增量选择标记和初始包围盒：
 
 ```ts
 interface SelectionStartPayload {
-  mode: 'box';
-  additive: boolean;
+  additive: boolean;  // 增量选择（Ctrl/Cmd 按下 = 追加选中）；mode 已移除
   bounds: { x: number; y: number; width: number; height: number };
 }
 ```
@@ -426,7 +442,30 @@ interface SelectionStatePayload {
 
 ## 8. 拖拽协作设计
 
-### 8.1 开始拖拽
+### 8.1 当前已实现协议
+
+当前移动过程态复用正式画布中的图形编号，不引入服务端选区注册：
+
+```ts
+type ShapeMoveInteraction =
+  | {
+      kind: 'shape-move';
+      phase: 'start';
+      sessionId: string;
+      shapeIds: string[];
+      delta: { x: number; y: number };
+    }
+  | {
+      kind: 'shape-move';
+      phase: 'update';
+      sessionId: string;
+      delta: { x: number; y: number };
+    };
+```
+
+`delta` 始终表示相对会话起点的总位移。远端使用开始消息保存的图形编号，从正式 Store 读取基础几何并叠加最新位移；多图形时额外计算移动后联合包围盒。`commit/reset` 只清除过程预览，正式结果继续由应用命令和事务同步。
+
+### 8.2 目标增强协议：开始拖拽
 
 ```ts
 interface MoveBeginPayload {
@@ -447,7 +486,7 @@ start 阶段完成：
 4. 固定会话起始边界和版本。
 5. 接收端建立远端预览。
 
-### 8.2 实时拖拽
+### 8.3 目标增强协议：实时拖拽
 
 ```ts
 interface MoveFramePayload {
@@ -465,7 +504,7 @@ interface MoveFramePayload {
 - 图形业务 `data`。
 - 已能从 selectionRef 和基础快照推导的包含关系数据。
 
-### 8.3 拖拽提交
+### 8.4 目标增强协议：拖拽提交
 
 commit 表达用户确认结束交互：
 
@@ -819,7 +858,7 @@ src/views/icce/ui/components/layers/
 
 | 模块                       | 职责                                                               |
 | -------------------------- | ------------------------------------------------------------------ |
-| `drag-message-codec`       | 在现有 `handleData` 中编码选中状态和单个轻量 `interaction` 对象。  |
+| `drag-message-codec`       | 编码选中状态和单个轻量过程对象，规范过程几何并省略空协议字段。     |
 | `remote-interaction-store` | 以 `userId + sessionId` 保存远端过程预览。                         |
 | `remote-selection-store`   | 以 `userId` 保存远端用户当前的图形和连线选中 ID。                  |
 | `useCollabSync`            | 处理选中状态和过程消息的节流、发送、接收及远端 Store 更新。        |
@@ -833,7 +872,7 @@ src/views/icce/ui/components/layers/
 完整链路：
 
 ```text
-selectionStore / shape-draw.tool / selection-resize-interaction
+selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-interaction
   → CANVAS_EVENTS.INTERACTION_SYNC
   → useCollabSync
   → drag.handleData.selection / interaction
@@ -878,9 +917,10 @@ selectionStore / shape-draw.tool / selection-resize-interaction
 ### 18.1 双协议阶段
 
 - 既有 `drag` 协议继续负责正式 add/modify/delete 数据同步。
-- `handleData.interaction` v1 只负责绘制、resize 和框选等过程态。
+- `handleData.interaction` v1 负责绘制、resize、框选和图形移动过程态。
 - 新增 `handleData.selection` 负责当前用户级选中状态快照。
-- 既有 `select` 完整对象载荷在新选择状态协作稳定后停止发送，迁移期间不将其误当作正式业务回放。
+- 既有 `select` 完整对象载荷已停止发送并从当前客户端协议类型中移除；接收旧消息时忽略该遗留字段。
+- 当前客户端发送消息时省略空的正式操作数组，接收端仍按可选数组兼容旧消息。
 - 新客户端收到旧消息时继续按现有逻辑回放正式变化。
 - 旧客户端忽略未识别的 `handleData.selection` 和新增过程消息，只看不到远端选中态或过程预览，但仍能看到最终提交结果。
 
@@ -923,6 +963,8 @@ selectionStore / shape-draw.tool / selection-resize-interaction
 - 远端选择与本地 `selectionStore` 隔离。
 
 ### 阶段五：拖拽 transform 协作
+
+客户端轻量过程协议、远端独立预览 Store、图形轮廓与联合包围盒展示已落地；服务端选区注册、租约和超大选区降级仍待实现。
 
 - start 声明目标，update 只发送总位移。
 - 中小选区使用临时 Group transform。
