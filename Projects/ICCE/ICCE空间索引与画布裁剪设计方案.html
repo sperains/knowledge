@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ICCE 空间索引与画布裁剪设计方案的可视化阅读版">
+  <title>ICCE · 空间索引与画布裁剪</title>
+  <style>
+    :root{--paper:#fffdf7;--ink:#29272b;--muted:#77727a;--line:#302d31;--pink:#ff91a8;--pink-soft:#ffe2e8;--yellow:#ffd66f;--yellow-soft:#fff1c6;--blue:#84cadb;--blue-soft:#def3f5;--green:#a9d99b;--green-soft:#e8f5df;--purple:#c5b4eb;--shadow:5px 6px 0 rgba(48,45,49,.13)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background-color:var(--paper);background-image:radial-gradient(rgba(206,174,142,.32) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.42) 1px,transparent 1px);background-size:19px 19px,100% 32px;font-family:"Hiragino Maru Gothic ProN","PingFang SC","Noto Sans CJK SC",sans-serif;line-height:1.7}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(67,50,40,.035) 4px);mix-blend-mode:multiply;z-index:10}a{color:inherit}.page{width:min(1180px,calc(100% - 36px));margin:auto;padding:34px 0 70px}
+    .hero{position:relative;overflow:hidden;padding:46px 50px 43px;border:3px solid var(--line);border-radius:35px 26px 39px 23px;background:var(--yellow-soft);box-shadow:10px 11px 0 var(--pink)}.hero:before{content:"⌁  ⌁  ⌁";position:absolute;right:37px;top:23px;color:var(--pink);font-size:48px;letter-spacing:.08em;transform:rotate(-8deg)}.hero:after{content:"▦  ✦  ⌘";position:absolute;right:45px;bottom:22px;color:#b68e9a;font-size:22px;letter-spacing:.25em;transform:rotate(4deg)}.eyebrow,.tag{display:inline-flex;align-items:center;width:fit-content;padding:3px 13px;border:2px solid var(--line);border-radius:999px;background:#fff;font-size:12px;letter-spacing:.08em}.eyebrow{background:var(--blue-soft);transform:rotate(-2deg)}h1,h2,h3,.handwritten{font-family:"Kaiti SC","STKaiti","Yuji Syuku",cursive}h1{max-width:820px;margin:18px 0 10px;font-size:clamp(39px,6.8vw,73px);line-height:1.05}.lead{max-width:770px;margin:0;font-size:17px}.hero-sticker{position:absolute;right:47px;bottom:65px;padding:8px 13px;border:2px solid var(--line);border-radius:14px;background:#fff;box-shadow:3px 4px 0 var(--line);font-size:12px;transform:rotate(5deg)}
+    .quick{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:29px 0 15px}.quick a{padding:8px 13px;border:2px solid var(--line);border-radius:999px;background:#fff;box-shadow:2px 3px 0 var(--line);text-decoration:none;font-size:13px;transition:transform .2s,background .2s}.quick a:hover{background:var(--pink-soft);transform:translateY(-3px) rotate(-2deg)}.quick small{margin-left:auto;color:var(--muted)}
+    .section{margin-top:38px;scroll-margin-top:20px}.heading{display:flex;align-items:center;gap:12px;margin-bottom:16px}.heading h2{margin:0;font-size:31px;line-height:1.2}.number{display:grid;flex:0 0 38px;place-items:center;width:38px;height:38px;border:2px solid var(--line);border-radius:49% 51% 45% 55%;background:var(--pink);font-weight:800;transform:rotate(-8deg)}.intro{max-width:790px;margin:-3px 0 17px 50px;color:var(--muted);font-size:14px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}.card{position:relative;grid-column:span 4;padding:22px;border:2px solid var(--line);border-radius:20px 25px 18px 23px;background:rgba(255,255,255,.9);box-shadow:var(--shadow)}.card.wide{grid-column:span 8}.card.full{grid-column:1/-1}.pink{background:var(--pink-soft)!important}.yellow{background:var(--yellow-soft)!important}.blue{background:var(--blue-soft)!important}.green{background:var(--green-soft)!important}.purple{background:#eee9fb!important}.card h3{margin:9px 0 7px;font-size:20px;line-height:1.3}.card p{margin-bottom:9px;color:#4d4a51;font-size:14px}.tag{padding:2px 10px;border-width:1.5px;font-size:11px}.list{margin:8px 0 0;padding-left:20px;font-size:14px}.list li{margin:5px 0}.list li::marker{content:"✦  ";color:var(--pink)}.note{margin-top:12px;padding:12px 14px;border-left:5px solid var(--pink);border-radius:0 13px 13px 0;background:rgba(255,255,255,.72);font-size:13px}
+    .metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{padding:15px 12px;border:2px dashed var(--line);border-radius:16px;background:rgba(255,255,255,.75);text-align:center}.metric strong{display:block;font-family:"Kaiti SC","STKaiti",cursive;font-size:28px;line-height:1.2}.metric span{color:var(--muted);font-size:12px}.flow{display:grid;grid-template-columns:1fr 34px 1fr 34px 1fr 34px 1fr;gap:8px;align-items:center;margin-top:13px}.step{min-height:102px;padding:14px 11px;border:2px solid var(--line);border-radius:16px;background:#fff;text-align:center}.step strong{display:block;margin-bottom:4px;font-family:"Kaiti SC","STKaiti",cursive;font-size:19px}.step small{color:var(--muted);font-size:11px}.arrow{color:var(--pink);font-size:28px;text-align:center}.formula{margin:12px 0 0;padding:14px 17px;border:2px solid var(--line);border-radius:15px;background:#302d31;color:#fff8da;font-family:"SFMono-Regular",Consolas,monospace;font-size:13px;line-height:1.8;overflow:auto}.formula .pink-text{color:#ffb9c7}.formula .blue-text{color:#b9e9ef}.formula .green-text{color:#c4edb5}.formula .yellow-text{color:#ffe38a}
+    .stack{display:grid;gap:8px;margin-top:12px}.layer{padding:12px 15px;border:2px solid var(--line);border-radius:14px;background:#fff}.layer strong{display:inline-block;min-width:105px;margin-right:8px}.layer small{color:var(--muted);font-size:12px}.layer:nth-child(1){transform:rotate(-.5deg)}.layer:nth-child(2){transform:rotate(.5deg)}.layer:nth-child(3){transform:rotate(-.4deg)}.layer:nth-child(4){transform:rotate(.4deg)}
+    table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:2px solid var(--line);border-radius:16px;background:rgba(255,255,255,.8);font-size:13px}th,td{padding:12px 13px;border-right:1px solid rgba(48,45,49,.25);border-bottom:1px solid rgba(48,45,49,.25);text-align:left;vertical-align:top}th{background:var(--yellow);font-weight:800}tr:last-child td{border-bottom:0}th:last-child,td:last-child{border-right:0}.code{margin:10px 0 0;padding:16px;border:2px solid var(--line);border-radius:15px;background:#302d31;color:#fff8da;font:13px/1.7 "SFMono-Regular",Consolas,monospace;white-space:pre-wrap;overflow:auto}.code .key{color:#ffb9c7}.code .str{color:#c4edb5}.rule-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:11px}.rule{padding:13px 15px;border:2px dashed var(--line);border-radius:15px;background:rgba(255,255,255,.68)}.rule strong{display:block;margin-bottom:3px;font-size:14px}.rule span{color:var(--muted);font-size:12px}details{border-top:2px dashed rgba(48,45,49,.35)}details:first-of-type{border-top:0}summary{padding:13px 0;cursor:pointer;font-size:15px;font-weight:700;list-style:none}summary::-webkit-details-marker{display:none}summary:before{content:"＋";display:inline-grid;place-items:center;width:22px;height:22px;margin-right:8px;border:1.5px solid var(--line);border-radius:50%;background:var(--yellow);font-size:14px}details[open] summary:before{content:"－";background:var(--pink)}.details-body{padding:0 0 14px 31px;color:#4d4a51;font-size:14px}.footer{margin-top:47px;padding:22px;border-top:2px dashed var(--line);color:var(--muted);text-align:center;font-size:12px}
+    @media(max-width:820px){.page{width:min(100% - 22px,680px);padding-top:16px}.hero{padding:31px 24px 100px}.hero:before{right:18px}.hero:after{right:20px;font-size:17px}.hero-sticker{right:22px;bottom:32px}.quick small{width:100%;margin-left:0}.card,.card.wide{grid-column:1/-1}.intro{margin-left:0}.metric-row{grid-template-columns:repeat(2,1fr)}.flow{grid-template-columns:1fr;gap:5px}.arrow{height:18px;transform:rotate(90deg)}.rule-grid{grid-template-columns:1fr}table{font-size:12px}}
+    @media(max-width:480px){.heading h2{font-size:26px}.card{padding:19px}.metric strong{font-size:24px}}
+    @media(prefers-reduced-motion:no-preference){.hero,.card{animation:appear .55s both}.card:nth-child(2){animation-delay:.07s}.card:nth-child(3){animation-delay:.14s}@keyframes appear{from{opacity:0;transform:translateY(10px) rotate(.4deg)}to{opacity:1;transform:none}}}@media print{body{background:#fff}body:before,.quick{display:none!important}.page{width:100%;padding:0}.hero{box-shadow:none}.card{break-inside:avoid;box-shadow:none}.section{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <span class="eyebrow">ICCE · 性能设计知识卡片</span>
+      <h1>空间索引<br>与画布裁剪</h1>
+      <p class="lead">让大画布只为“附近、需要、正在交互”的内容付出渲染成本：空间索引负责快速找到候选，视口裁剪负责控制挂载规模，两者共同守住交互流畅度。</p>
+      <span class="hero-sticker">查得快 · 挂得少 · 不丢状态</span>
+    </header>
+
+    <nav class="quick" aria-label="页面导航"><a href="#why">为什么做</a><a href="#coordinate">坐标体系</a><a href="#index">空间索引</a><a href="#culling">视口裁剪</a><a href="#interaction">交互一致性</a><a href="#verify">验证与演进</a><small>来源：ICCE 空间索引与画布裁剪设计方案</small></nav>
+
+    <section id="why" class="section">
+      <div class="heading"><span class="number">01</span><h2>先分清：索引 ≠ 裁剪</h2></div>
+      <p class="intro">大规模画布的问题不是“数据太多”这么简单，而是每次平移、缩放和选择都可能重复触发全量遍历、组件更新、绘制和命中监听。</p>
+      <div class="grid">
+        <article class="card pink"><span class="tag">空间索引</span><h3>查得快</h3><p>把无限画布切成网格，先找出可能相交的实体，再做精确矩形判断。</p><ul class="list"><li>输出候选编号</li><li>减少全量遍历</li><li>服务范围查询和对齐候选</li></ul></article>
+        <article class="card blue"><span class="tag">视口裁剪</span><h3>挂得少</h3><p>只把当前视口附近的区域、图形和连线挂载到主渲染树，降低 Vue 与 Konva 的维护成本。</p><ul class="list"><li>输出当前渲染集合</li><li>使用屏幕缓冲避免闪烁</li><li>文本再使用更小窗口</li></ul></article>
+        <article class="card green"><span class="tag">强制保留</span><h3>状态不丢</h3><p>选中、搜索高亮、编辑中的目标即使暂时离开窗口，也必须继续存在于渲染集合。</p><ul class="list"><li>不裁剪业务数据</li><li>不改变世界坐标</li><li>不破坏交互会话</li></ul></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="heading"><span class="number">02</span><h2>当前落地结果</h2></div>
+      <div class="card full yellow"><div class="metric-row"><div class="metric"><strong>512</strong><span>默认网格世界尺寸</span></div><div class="metric"><strong>320 px</strong><span>图形渲染缓冲</span></div><div class="metric"><strong>96 px</strong><span>文字详细缓冲</span></div><div class="metric"><strong>35%</strong><span>窗口边缘刷新阈值</span></div></div><div class="note"><strong>已完成：</strong>图形与连线分别接入均匀网格索引；主图层按视口裁剪；连续缩放期间暂缓非强制富文本查询；范围选择与画布查询复用索引入口。</div></div>
+    </section>
+
+    <section id="coordinate" class="section">
+      <div class="heading"><span class="number">03</span><h2>坐标体系：所有查询回到世界</h2></div>
+      <p class="intro">业务实体和索引使用画布世界坐标，用户看到的是经过舞台位置与缩放变换后的屏幕坐标。屏幕缓冲要先换算成世界距离。</p>
+      <div class="grid">
+        <article class="card wide blue"><span class="tag">世界坐标 → 屏幕坐标</span><div class="formula"><span class="pink-text">屏幕坐标</span> = 世界坐标 × scale + position
+
+世界左边界 = -position.x / scale
+世界上边界 = -position.y / scale
+世界宽度   = viewport.width / scale
+世界高度   = viewport.height / scale</div><div class="note">不能直接拿屏幕像素矩形查询世界坐标索引；必须先调用视口范围换算。</div></article>
+        <article class="card"><span class="tag">缓冲换算</span><h3>屏幕距离保持稳定</h3><div class="formula"><span class="yellow-text">世界缓冲</span> = 屏幕缓冲像素 / max(abs(scale), 0.01)</div><p>缩放越小，同样的屏幕缓冲对应更大的世界范围；缩放越大，对应的世界缓冲越小。</p></article>
+        <article class="card full yellow"><span class="tag">关键边界 · 镜头不搬索引</span><h3>平移和缩放为什么不更新空间索引？</h3><p>空间索引记录的是实体在画布世界坐标中的位置；视口平移和缩放只改变观察方式，不改变实体的世界坐标和几何包围盒。</p><div class="formula"><span class="yellow-text">视口 position / scale 变化</span>
+  → 换算新的世界可见范围
+  → 按缓冲区扩展查询范围
+  → 查询原有图形和连线索引
+  → 更新渲染集合</div><div class="note"><strong>例子：</strong>实体始终位于世界坐标 x = 100。平移只会让屏幕位置变化，索引中的 x = 100 不变；缩放只会改变范围映射比例，也不应搬移索引条目。</div></article>
+      </div>
+    </section>
+
+    <section id="index" class="section">
+      <div class="heading"><span class="number">04</span><h2>空间索引：一张会移动的网格地图</h2></div>
+      <div class="grid">
+        <article class="card wide green"><span class="tag">均匀网格 · 只做候选过滤</span><h3>三组数据，维护一条关系</h3><div class="stack"><div class="layer"><strong>entries</strong><small>实体编号 → 规范化包围盒</small></div><div class="layer"><strong>entryCells</strong><small>实体编号 → 它覆盖的网格键列表</small></div><div class="layer"><strong>cells</strong><small>网格键 → 实体编号集合</small></div></div><div class="note">实体跨越多个单元时，查询先使用 Set 去重，再做精确相交判断。</div></article>
+        <article class="card"><span class="tag">单元坐标</span><h3>负坐标也要正确</h3><div class="formula"><span class="blue-text">minCellX</span> = floor(x / cellSize)
+<span class="blue-text">maxCellX</span> = floor((x + width) / cellSize)
+<span class="blue-text">minCellY</span> = floor(y / cellSize)
+<span class="blue-text">maxCellY</span> = floor((y + height) / cellSize)</div><p>使用 floor 而不是截断取整，避免负坐标被错误归入零号网格。</p></article>
+        <article class="card full yellow"><span class="tag">查询链路</span><div class="flow"><div class="step"><strong>查询矩形</strong><small>规范化边界</small></div><div class="arrow">→</div><div class="step"><strong>命中网格</strong><small>收集候选编号</small></div><div class="arrow">→</div><div class="step"><strong>Set 去重</strong><small>跨格实体只留一次</small></div><div class="arrow">→</div><div class="step"><strong>精确过滤</strong><small>返回实际相交项</small></div></div></article>
+      </div>
+    </section>
+
+    <section id="culling" class="section">
+      <div class="heading"><span class="number">05</span><h2>视口裁剪：三层窗口，三种成本</h2></div>
+      <div class="card full blue"><table><thead><tr><th>范围</th><th>屏幕缓冲</th><th>负责什么</th><th>为什么这样设</th></tr></thead><tbody><tr><td>可见视口</td><td>0</td><td>用户当前看到的世界区域</td><td>作为裁剪计算的基准</td></tr><tr><td>图形渲染窗口</td><td>320 px</td><td>区域、普通图形、连线是否挂载</td><td>提前挂载，减少边缘闪烁</td></tr><tr><td>文字详细窗口</td><td>96 px</td><td>图形和连线是否挂载详细文字</td><td>文字布局结构成本更高</td></tr></tbody></table></div>
+      <div class="grid" style="margin-top:18px"><article class="card wide yellow"><span class="tag">窗口刷新策略</span><h3>窗口内移动，先复用</h3><p>视口每移动一点就重建集合，会抵消缓冲区收益。因此只有当视口接近渲染窗口边缘，或进入落稳阶段时才刷新。</p><div class="formula"><span class="yellow-text">安全边距</span> = 320 px × 35% / scale
+
+视口进入安全边距 → 扩展渲染窗口 → 执行索引查询</div></article><article class="card pink"><span class="tag">连续缩放</span><h3>文字不跟着抖</h3><p>连续缩放期间暂缓文字窗口刷新，保留已经挂载的文字，让舞台自然缩放；落稳后再按最终比例恢复完整文字。</p></article></div>
+    </section>
+
+    <section class="section">
+      <div class="heading"><span class="number">06</span><h2>渲染集合：普通查询 + 强制保留</h2></div>
+      <div class="grid">
+        <article class="card wide green"><span class="tag">主图层装配顺序</span><div class="flow"><div class="step"><strong>视口快照</strong><small>提交态 / 实时态</small></div><div class="arrow">→</div><div class="step"><strong>索引查询</strong><small>图形 + 连线</small></div><div class="arrow">→</div><div class="step"><strong>强制合并</strong><small>选中 / 高亮 / 编辑</small></div><div class="arrow">→</div><div class="step"><strong>稳定排序</strong><small>区域 → 图形 → 连线</small></div></div></article>
+        <article class="card"><span class="tag">必须保留</span><h3>交互目标优先</h3><ul class="list"><li>当前选中图形和连线</li><li>文本与富文本高亮目标</li><li>正在编辑的图形或连线文字</li><li>视口外定位操作的目标</li></ul></article>
+        <article class="card full pink"><span class="tag">边界原则</span><p class="handwritten" style="margin:0;font-size:clamp(23px,4vw,36px);line-height:1.35">裁剪的是“挂载集合”，<br>不是业务实体；索引的是“边界”，<br>不是正式数据。</p></article>
+      </div>
+    </section>
+
+    <section id="interaction" class="section">
+      <div class="heading"><span class="number">07</span><h2>交互一致性：查询快，但语义不能变</h2></div>
+      <div class="grid">
+        <article class="card"><span class="tag">框选</span><h3>索引缩小候选</h3><p>空间索引只负责快速找到候选，最终“相交”还是“完全包含”由既有几何规则决定。</p></article>
+        <article class="card blue"><span class="tag">智能对齐</span><h3>预览不污染索引</h3><p>移动预览不重建索引；只有移动计划提交、实体几何正式更新后，才同步新的包围盒。</p></article>
+        <article class="card yellow"><span class="tag">命中检测</span><h3>裁剪不替代命中内核</h3><p>精确标签、轮廓、覆盖层和舞台命中仍使用共享几何命中逻辑，不能把“未挂载”当成“不存在”。</p></article>
+        <article class="card full green"><span class="tag">写入一致性</span><div class="formula"><span class="green-text">实体 Store 写入</span>
+  + 空间索引 upsert / remove
+  + 对应修订号递增
+
+图形、连线、关联点数组和清空流程都必须遵守同一条链路。</div></article>
+      </div>
+    </section>
+
+    <section id="verify" class="section">
+      <div class="heading"><span class="number">08</span><h2>验证、排查与后续演进</h2></div>
+      <div class="grid">
+        <article class="card wide purple"><span class="tag">测试重点</span><div class="rule-grid"><div class="rule"><strong>空间索引</strong><span>跨网格去重、负坐标、更新、删除、清空、负宽高。</span></div><div class="rule"><strong>视口裁剪</strong><span>世界范围换算、缓冲扩展、边缘刷新、文本窗口、强制保留。</span></div><div class="rule"><strong>Store 集成</strong><span>图形、连线、正交渲染包围盒与索引同步。</span></div><div class="rule"><strong>浏览器场景</strong><span>千节点基线、稀疏大图、密集网格、连续平移缩放和视口外定位。</span></div></div></article>
+        <article class="card"><span class="tag">性能不要只看帧率</span><h3>同时记录五类信号</h3><ul class="list"><li>场景节点数量</li><li>渲染落稳耗时</li><li>索引候选数量</li><li>窗口刷新次数</li><li>长任务与富文本布局</li></ul></article>
+        <article class="card full yellow"><span class="tag">后续边界</span><h3>什么时候换更复杂的索引？</h3><p>只有当均匀网格在真实数据中仍造成明显长任务，或大区域、长连线、极度倾斜的数据分布让候选数量持续失控时，才评估四叉树、矩形树或分层索引。替换实现时保持现有 upsert、remove、query、clear、size 契约。</p><div class="note"><strong>当前结论：</strong>先用可复现基线调优参数，再决定是否更换结构；不要为了“看起来更高级”提前引入复杂索引。</div></article>
+      </div>
+    </section>
+
+    <section class="section"><div class="heading"><span class="number">09</span><h2>实现索引</h2></div><div class="card full"><div class="code"><span class="key">空间索引</span>  src/views/icce/domain/services/spatial-index.ts
+<span class="key">Store 装配</span>  src/views/icce/infrastructure/stores/shapes-store.ts
+<span class="key">视口范围</span>  src/views/icce/ui/viewport/viewport-controller.ts
+<span class="key">裁剪规则</span>  src/views/icce/ui/viewport/viewport-culling.ts
+<span class="key">主图层</span>    src/views/icce/ui/components/layers/MainLayer.vue
+<span class="key">查询入口</span>  src/views/icce/infrastructure/composition/canvas-query.ts
+<span class="key">单元测试</span>  src/views/icce/tests/domain/services/spatial-index.spec.ts
+<span class="key">裁剪测试</span>  src/views/icce/tests/ui/viewport/viewport-culling.spec.ts</div><div class="note">完整文字版：<a href="./ICCE空间索引与画布裁剪设计方案.md">打开 Markdown 设计方案</a></div></div></section>
+
+    <footer class="footer">ICCE · 空间索引与画布裁剪 · HTML 阅读版<br>视觉参考：日式可爱手绘知识卡片视觉语言</footer>
+  </main>
+</body>
+</html>

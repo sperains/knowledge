@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="日式可爱手绘知识卡片视觉语言提示词手册">
+  <title>日式可爱手绘知识卡片 · 视觉语言提示词</title>
+  <style>
+    :root{--paper:#fffdf7;--ink:#29272b;--muted:#77727a;--line:#302d31;--pink:#ff91a8;--pink-soft:#ffe2e8;--yellow:#ffd66f;--yellow-soft:#fff1c6;--blue:#84cadb;--blue-soft:#def3f5;--green:#a9d99b;--green-soft:#e8f5df;--purple:#c5b4eb;--shadow:5px 6px 0 rgba(48,45,49,.13)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background-color:var(--paper);background-image:radial-gradient(rgba(206,174,142,.32) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.42) 1px,transparent 1px);background-size:19px 19px,100% 32px;font-family:"Hiragino Maru Gothic ProN","PingFang SC","Noto Sans CJK SC",sans-serif;line-height:1.7}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.2;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(67,50,40,.035) 4px);mix-blend-mode:multiply;z-index:10}a{color:inherit}button{font:inherit}.page{width:min(1180px,calc(100% - 36px));margin:auto;padding:34px 0 70px}
+    .hero{position:relative;overflow:hidden;padding:48px 50px 44px;border:3px solid var(--line);border-radius:35px 26px 39px 23px;background:var(--yellow-soft);box-shadow:10px 11px 0 var(--pink)}.hero:before{content:"✦";position:absolute;right:55px;top:22px;color:var(--pink);font-size:76px;transform:rotate(14deg)}.hero:after{content:"✎  +  ◌  +  ✿";position:absolute;right:42px;bottom:23px;color:#b68e9a;font-size:20px;letter-spacing:.25em;transform:rotate(-5deg)}
+    .eyebrow,.tag{display:inline-flex;align-items:center;width:fit-content;padding:3px 13px;border:2px solid var(--line);border-radius:999px;background:#fff;font-size:12px;letter-spacing:.09em}.eyebrow{background:var(--blue-soft);transform:rotate(-2deg)}h1,h2,.handwritten{font-family:"Kaiti SC","STKaiti","Yuji Syuku",cursive}h1{max-width:780px;margin:19px 0 11px;font-size:clamp(40px,7vw,76px);line-height:1.04;letter-spacing:.02em}.hero-lead{max-width:760px;margin:0;font-size:17px}.hero-sticker{position:absolute;right:48px;bottom:68px;padding:9px 14px;border:2px solid var(--line);border-radius:14px;background:#fff;box-shadow:3px 4px 0 var(--line);font-size:13px;transform:rotate(5deg)}
+    .quick-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:30px 0 16px}.quick-bar a{padding:8px 14px;border:2px solid var(--line);border-radius:999px;background:#fff;box-shadow:2px 3px 0 var(--line);text-decoration:none;font-size:13px;transition:transform .2s,background .2s}.quick-bar a:hover{background:var(--pink-soft);transform:translateY(-3px) rotate(-2deg)}.quick-note{margin-left:auto;color:var(--muted);font-size:12px}
+    .section{margin-top:38px;scroll-margin-top:20px}.section-heading{display:flex;align-items:center;gap:12px;margin-bottom:17px}.section-heading h2{margin:0;font-size:31px;line-height:1.2}.number{display:grid;flex:0 0 38px;place-items:center;width:38px;height:38px;border:2px solid var(--line);border-radius:49% 51% 45% 55%;background:var(--pink);font-weight:800;transform:rotate(-8deg)}.section-intro{max-width:760px;margin:-3px 0 17px 50px;color:var(--muted);font-size:14px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}.card{position:relative;grid-column:span 4;padding:23px;border:2px solid var(--line);border-radius:20px 25px 18px 23px;background:rgba(255,255,255,.89);box-shadow:var(--shadow)}.card.wide{grid-column:span 8}.card.full{grid-column:1/-1}.card.pink{background:var(--pink-soft)}.card.yellow{background:var(--yellow-soft)}.card.blue{background:var(--blue-soft)}.card.green{background:var(--green-soft)}.card.purple{background:#eee9fb}.card h3{margin:11px 0 8px;font-size:20px;line-height:1.3}.card p{margin-bottom:10px;color:#4d4a51;font-size:14px}.tag{padding:2px 10px;border-width:1.5px;font-size:11px;letter-spacing:.04em}.list{margin:9px 0 0;padding-left:20px;font-size:14px}.list li{margin:5px 0}.list li::marker{content:"✦  ";color:var(--pink)}.icon{display:grid;place-items:center;width:52px;height:42px;border:3px solid var(--line);border-radius:46% 54% 48% 52%;background:#fff;box-shadow:4px 4px 0 rgba(48,45,49,.12);font-size:24px;transform:rotate(-4deg)}
+    .palette{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:15px}.swatch{min-height:74px;padding:10px 8px;border:2px solid var(--line);border-radius:14px;background:#fff;font-size:11px;text-align:center}.swatch:before{content:"";display:block;height:28px;margin-bottom:7px;border:1.5px solid var(--line);border-radius:50%;background:var(--swatch)}.swatch:nth-child(1){--swatch:var(--pink)}.swatch:nth-child(2){--swatch:var(--yellow)}.swatch:nth-child(3){--swatch:var(--blue)}.swatch:nth-child(4){--swatch:var(--green)}.swatch:nth-child(5){--swatch:var(--purple)}
+    .hierarchy{display:grid;grid-template-columns:1fr 36px 1fr 36px 1fr;gap:10px;align-items:center;margin-top:13px}.hierarchy-item{min-height:100px;padding:15px;border:2px dashed var(--line);border-radius:17px;background:rgba(255,255,255,.75);text-align:center}.hierarchy-item strong{display:block;margin-bottom:5px;font-size:16px}.hierarchy-item small{color:var(--muted);font-size:11px}.arrow{color:var(--pink);font-size:27px;text-align:center}
+    .prompt-wrap{position:relative;margin-top:13px}.prompt{display:block;width:100%;min-height:180px;resize:vertical;overflow:auto;margin:0;padding:20px 21px;border:2px solid var(--line);border-radius:17px;background:#302d31;color:#fff8da;font-family:"SFMono-Regular",Consolas,monospace;font-size:13px;line-height:1.75;white-space:pre-wrap}.copy{position:absolute;right:10px;top:10px;padding:5px 10px;border:1.5px solid #fff8da;border-radius:999px;background:transparent;color:#fff8da;cursor:pointer;font-size:11px}.copy:hover,.copy.done{background:#fff8da;color:var(--ink)}.callout{margin-top:13px;padding:13px 15px;border-left:5px solid var(--pink);border-radius:0 13px 13px 0;background:rgba(255,255,255,.72);font-size:13px}.rule-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.rule-item{padding:13px 15px;border:2px dashed var(--line);border-radius:15px;background:rgba(255,255,255,.68)}.rule-item strong{display:block;margin-bottom:3px;font-size:14px}.rule-item span{color:var(--muted);font-size:12px}
+    details{border-top:2px dashed rgba(48,45,49,.35)}details:first-of-type{border-top:0}summary{padding:13px 0;cursor:pointer;font-size:15px;font-weight:700;list-style:none}summary::-webkit-details-marker{display:none}summary:before{content:"＋";display:inline-grid;place-items:center;width:22px;height:22px;margin-right:8px;border:1.5px solid var(--line);border-radius:50%;background:var(--yellow);font-size:14px}details[open] summary:before{content:"－";background:var(--pink)}.details-body{padding:0 0 14px 31px;color:#4d4a51;font-size:14px}.footer{margin-top:47px;padding:22px;border-top:2px dashed var(--line);color:var(--muted);text-align:center;font-size:12px}
+    @media(max-width:820px){.page{width:min(100% - 22px,680px);padding-top:16px}.hero{padding:31px 24px 100px}.hero:before{right:22px}.hero:after{right:18px;font-size:16px}.hero-sticker{right:22px;bottom:32px}.quick-note{width:100%;margin-left:0}.card,.card.wide{grid-column:1/-1}.section-intro{margin-left:0}.hierarchy{grid-template-columns:1fr}.arrow{transform:rotate(90deg);height:18px}}@media(max-width:480px){.section-heading h2{font-size:26px}.card{padding:19px}.rule-grid{grid-template-columns:1fr}.palette{gap:4px}.swatch{min-height:65px;padding-inline:3px;font-size:9px}}@media(prefers-reduced-motion:no-preference){.hero,.card{animation:appear .55s both}.card:nth-child(2){animation-delay:.07s}.card:nth-child(3){animation-delay:.14s}@keyframes appear{from{opacity:0;transform:translateY(10px) rotate(.4deg)}to{opacity:1;transform:none}}}@media print{body{background:#fff}body:before,.quick-bar,.copy{display:none!important}.page{width:100%;padding:0}.hero{box-shadow:none}.card{break-inside:avoid;box-shadow:none}.section{break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <span class="eyebrow">AI 绘图提示词 · 视觉语言手册</span>
+      <h1>日式可爱手绘<br>知识卡片</h1>
+      <p class="hero-lead">提取一套可复用的视觉语言：把“高级日式学习笔记”的手作温度，和“可爱科技信息图”的结构感放在同一张知识卡片里。</p>
+      <span class="hero-sticker">清爽 · 有趣 · 好读</span>
+    </header>
+
+    <nav class="quick-bar" aria-label="页面导航">
+      <a href="#overview">先看总览</a><a href="#visual">视觉语言</a><a href="#prompt">精简提示词</a><a href="#template">通用模板</a><a href="#rules">使用约束</a>
+      <span class="quick-note">适用于架构图、教程、产品介绍、技术路线图和周报总结</span>
+    </nav>
+
+    <section id="overview" class="section">
+      <div class="section-heading"><span class="number">01</span><h2>先记住这一句话</h2></div>
+      <p class="section-intro">这不是固定版式，也不是特定角色的复刻，而是一套可以迁移到不同主题的“视觉语法”。</p>
+      <div class="grid">
+        <article class="card pink"><span class="icon">✎</span><h3>手作温度</h3><p>像一本认真整理过的日本学习笔记：纸张、墨线、马克笔和彩铅留下轻微的不完美。</p><ul class="list"><li>白纸或浅色纸张背景</li><li>手绘黑色轮廓</li><li>略带不规则的圆角形状</li></ul></article>
+        <article class="card blue"><span class="icon">▦</span><h3>信息清晰</h3><p>可爱装饰服务于阅读，不抢走信息本身的注意力；卡片、标题和层级都要一眼看懂。</p><ul class="list"><li>结构化网格布局</li><li>重点使用柔和色块</li><li>留出足够的呼吸空间</li></ul></article>
+        <article class="card yellow"><span class="icon">★</span><h3>友好有趣</h3><p>像社交媒体上容易被收藏的技术知识卡：聪明、轻快，有一点贴纸和涂鸦带来的惊喜。</p><ul class="list"><li>小星星、箭头、贴纸</li><li>可爱吉祥物或小角色</li><li>手写风格的补充注释</li></ul></article>
+      </div>
+    </section>
+
+    <section id="visual" class="section">
+      <div class="section-heading"><span class="number">02</span><h2>视觉语言拆解</h2></div>
+      <p class="section-intro">生成时可以把下面六组词分开使用：主题内容负责“讲什么”，视觉语言负责“怎么讲”。</p>
+      <div class="grid">
+        <article class="card wide green"><span class="tag">01 · 风格基底</span><h3>Japanese stationery × educational infographic</h3><p>整体像日本文具店里的学习用品与现代知识海报的结合：清楚、有秩序，但保留手工痕迹。</p><div class="callout"><strong>推荐记忆：</strong>高级日式学习笔记 + 可爱科技知识信息图。</div></article>
+        <article class="card"><span class="tag">02 · 线条</span><h3>黑色手绘轮廓</h3><p>使用 rounded black outlines、rough hand-drawn lines、slightly imperfect strokes，避免结果过于像商业软件界面。</p></article>
+        <article class="card blue"><span class="tag">03 · 构图</span><h3>卡片化信息结构</h3><p>使用现代信息可视化的结构化网格、圆角面板、柔和边框、重点色块和充足留白。</p></article>
+        <article class="card pink"><span class="tag">04 · 插画</span><h3>小比例的可爱角色</h3><p>可以加入 chibi kawaii characters、simple cute mascots 和大眼睛小角色，让内容更有陪伴感。</p></article>
+        <article class="card yellow"><span class="tag">05 · 装饰</span><h3>涂鸦与贴纸</h3><p>用小星星、闪光、箭头、贴纸和手写注释连接内容，不要让装饰密度超过信息密度。</p></article>
+        <article class="card purple"><span class="tag">06 · 氛围</span><h3>聪明，但不严肃</h3><p>整体情绪是 cute、intelligent、playful、educational、modern，像一张会被分享的技术学习卡片。</p></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading"><span class="number">03</span><h2>色彩与层级</h2></div>
+      <div class="card full blue"><h3>柔和粉彩不是“全部变淡”</h3><p>建议让黑色手绘线承担结构，让粉、黄、蓝、绿和淡紫承担语义分组。背景清爽，重点色块要有明确分工。</p><div class="palette"><div class="swatch">樱花粉<br><small>#FF91A8</small></div><div class="swatch">奶油黄<br><small>#FFD66F</small></div><div class="swatch">晴空蓝<br><small>#84CADB</small></div><div class="swatch">嫩芽绿<br><small>#A9D99B</small></div><div class="swatch">淡紫色<br><small>#C5B4EB</small></div></div><div class="hierarchy"><div class="hierarchy-item"><strong>大标题</strong><small>手写感、粗、醒目<br>先让人知道主题</small></div><div class="arrow">→</div><div class="hierarchy-item"><strong>卡片内容</strong><small>短段落、关键词、图标<br>让信息容易扫描</small></div><div class="arrow">→</div><div class="hierarchy-item"><strong>手写注释</strong><small>补充语气和重点<br>不承担主要信息</small></div></div></div>
+    </section>
+
+    <section id="prompt" class="section">
+      <div class="section-heading"><span class="number">04</span><h2>适合 AI 绘图模型的精简版</h2></div>
+      <p class="section-intro">适合快速试生成。主题内容可以接在末尾，例如“technology knowledge visualization about spatial indexing”。</p>
+      <div class="card full yellow"><div class="prompt-wrap"><button class="copy" data-copy="compact">复制</button><textarea id="compact" class="prompt" readonly>Kawaii Japanese educational infographic style,
+hand-drawn notebook aesthetic,
+white paper background,
+pastel colors,
+cute doodles,
+rounded black outlines,
+marker pen texture,
+chibi mascot illustrations,
+handwritten typography,
+soft stickers and decorative icons,
+clean information layout,
+modern knowledge card design,
+friendly technology education poster,
+minimal but detailed,
+high readability,
+Pinterest and Japanese stationery style.</textarea></div><div class="callout"><strong>使用方式：</strong>先保留视觉语言，再在末尾追加主题、受众、画幅比例、需要展示的信息和禁止出现的内容。</div></div>
+    </section>
+
+    <section id="template" class="section">
+      <div class="section-heading"><span class="number">05</span><h2>可直接复用的通用模板</h2></div>
+      <p class="section-intro">这段模板只约束视觉风格，不绑定具体主题、角色或版式。把主题描述放在最后，能降低模型被主题词带偏的概率。</p>
+      <div class="card full green"><div class="prompt-wrap"><button class="copy" data-copy="template-prompt">复制</button><textarea id="template-prompt" class="prompt" readonly>Create an image in the style of a kawaii Japanese hand-drawn knowledge card.
+
+Style only:
+Japanese stationery aesthetic,
+cute educational infographic,
+white paper texture,
+pastel color palette,
+handwritten typography,
+rounded black outlines,
+marker and pencil drawing texture,
+chibi mascot characters,
+playful doodles,
+stars, stickers and small decorative elements,
+clean structured layout,
+modern information visualization,
+friendly and approachable,
+high readability,
+social media knowledge poster style.
+
+The image should feel like a premium Japanese study note mixed with a cute technology infographic.
+Do not copy any specific subject, characters, or layout. Only preserve the visual style.</textarea></div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading"><span class="number">06</span><h2>风格增强词：按问题加</h2></div>
+      <div class="grid">
+        <article class="card pink"><span class="tag">结果太像商业扁平界面</span><h3>加强手绘感</h3><div class="prompt-wrap"><button class="copy" data-copy="hand">复制</button><textarea id="hand" class="prompt" readonly>rough hand-drawn lines,
+slightly imperfect strokes,
+sketchy ink outlines,
+handmade illustration feeling</textarea></div></article>
+        <article class="card blue"><span class="tag">需要创作者知识卡气质</span><h3>加强社交媒体感</h3><div class="prompt-wrap"><button class="copy" data-copy="social">复制</button><textarea id="social" class="prompt" readonly>Xiaohongshu style knowledge card,
+social media infographic,
+creator-made educational poster</textarea></div></article>
+        <article class="card yellow"><span class="tag">需要适配技术主题</span><h3>使用泛化描述</h3><div class="prompt-wrap"><button class="copy" data-copy="tech">复制</button><textarea id="tech" class="prompt" readonly>technology knowledge visualization</textarea></div><div class="callout">避免直接写过于具体的对比主题，以免模型把画面锁定成表格或单一模板。</div></article>
+      </div>
+    </section>
+
+    <section id="rules" class="section">
+      <div class="section-heading"><span class="number">07</span><h2>使用约束与工作流</h2></div>
+      <div class="card full purple"><div class="rule-grid"><div class="rule-item"><strong>内容和风格分开写</strong><span>主题决定讲什么，提示词决定视觉语言，不要让具体主题吞没整套风格。</span></div><div class="rule-item"><strong>装饰要服务阅读</strong><span>星星、贴纸、角色和箭头用于引导视线，不要覆盖标题、正文和关键结构。</span></div><div class="rule-item"><strong>保留“只提取风格”</strong><span>参考图只用于提取色彩、线条、材质和气质，不复制主体、文字、角色和布局。</span></div><div class="rule-item"><strong>技术内容优先泛化</strong><span>优先使用 technology knowledge visualization，避免主题词直接决定构图。</span></div></div></div>
+      <div class="card full" style="margin-top:18px"><details open><summary>第一步：先锁定视觉语言</summary><div class="details-body">先使用精简版提示词确认纸张、粉彩、手绘轮廓、卡片化构图和可爱装饰是否符合预期。</div></details><details><summary>第二步：追加主题与信息层级</summary><div class="details-body">再补充主题内容、目标受众、标题、要展示的模块、信息数量和画幅比例。复杂技术内容应先减少文字，再用结构和图形承载关系。</div></details><details><summary>第三步：针对问题加入增强词</summary><div class="details-body">如果画面太平、太像商业 UI，就加入手绘感词；如果太像普通插画，就加入 educational infographic、clean information layout 和 high readability。</div></details><details><summary>第四步：补充负向约束</summary><div class="details-body">明确要求不要复制参考图的主体、角色、文字或具体版式；必要时增加避免过度拥挤、避免难以阅读的小字、避免过强渐变和过度商业扁平化。</div></details></div>
+    </section>
+
+    <section class="section"><div class="section-heading"><span class="number">08</span><h2>风格定位</h2></div><div class="card full pink"><p class="handwritten" style="margin:0;font-size:clamp(25px,4vw,38px);line-height:1.3">清爽、易读、有手作温度，<br>同时保留现代信息可视化的结构感。</p></div></section>
+    <footer class="footer">日式可爱手绘知识卡片视觉语言 · HTML 阅读版<br>内容基于原始 Markdown 重新编排，不绑定具体主题、角色或版式。</footer>
+  </main>
+  <script>
+    document.querySelectorAll('[data-copy]').forEach((button)=>{button.addEventListener('click',async()=>{const target=document.getElementById(button.dataset.copy);if(!target)return;try{await navigator.clipboard.writeText(target.value||target.textContent);const old=button.textContent;button.textContent='已复制 ✓';button.classList.add('done');setTimeout(()=>{button.textContent=old;button.classList.remove('done')},1500)}catch{button.textContent='请手动复制';setTimeout(()=>button.textContent='复制',1500)}})});
+  </script>
+</body>
+</html>

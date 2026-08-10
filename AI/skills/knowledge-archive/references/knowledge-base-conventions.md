@@ -8,7 +8,7 @@ This reference is a portable default, not a replacement for repository-local rul
 | --- | --- |
 | Long-term architecture choice or trade-off | `ADR/` |
 | Stable design, schema, or workflow | Project design or global conventions document |
-| Completed work on a specific date | `Daily/YYYY/MM/` or the host's daily-record location |
+| Completed work on a specific date | `Worklog/Daily/YYYY/MM/` or the host's daily-record location |
 | Reusable AI prompt | `AI/prompts/` |
 | Reusable agent procedure | `AI/skills/<skill-name>/` |
 | Unresolved decision | Existing pending-decisions section or issue tracker |

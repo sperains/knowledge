@@ -29,14 +29,15 @@
 
 远端过程态由独立的协作状态和协作渲染层承载，不得写入本地 `selectionStore`、`previewStore` 或正式 `shapesStore`。
 
-当前首期实现四类过程态协作：
+当前首期实现五类过程态协作：
 
 1. 普通图形的拖拽绘制过程协作。
 2. 单图形 resize 过程协作。
 3. 框选过程协作。
 4. 单图形和多图形移动过程协作。
+5. 连线创建、快速连接和端点重连过程协作。
 
-区域 resize、区域绘制、连线绘制、`selectionRef` 和超大选区优化仍不属于当前实现范围。
+区域 resize、区域绘制、`selectionRef` 和超大选区优化仍不属于当前实现范围。
 
 ## 3. 当前实现基线
 
@@ -101,7 +102,15 @@
 
 - `handleData` 只发送当前消息实际需要的字段，空的新增、修改和删除数组在发送出口省略。
 - 旧的完整对象选中数组已经移除，远端选中结果统一由 `selection` 快照表达。
-- 过程态包围盒与移动位移在协议编码出口统一为整数；本地指针和约束计算过程仍可保留浮点精度。
+- 过程态包围盒、移动位移与连线路径在协议编码出口统一为整数；本地指针和约束计算过程仍可保留浮点精度。
+
+### 3.8 连线连接过程协作已闭环
+
+- 连线创建、快速连接和端点重连共用 `line-connect` 过程类型与 `start / update / commit / reset` 生命周期。
+- `start` 只发送发起端计算完成的渲染路径和箭头方向，`update` 只覆盖最新渲染路径；不发送起终点业务对象、吸附目标或最终虚线业务样式。
+- 远端只在独立过程预览层按协作者颜色和统一虚线渲染路径，不写入正式连线 Store；提交或取消、工具切换与异常退出均清理预览。
+- 创建和端点重连的最终结果仍由应用命令产生并通过正式协作链路同步；远端不得根据过程路径创建或修改正式连线。
+- 客户端实现已由提交 `b4f6bea1d` 完成。
 
 ## 4. 需求范围
 
@@ -132,6 +141,14 @@
 - 框选更新时只发送当前最新 `bounds`，不发送实时对象列表。
 - 框选完成、工具切换或页面卸载时发送 `commit` 或 `reset` 清理远端预览。
 - 远端只渲染带用户颜色的框选矩形，不修改本地选择和正式图形状态。
+
+#### 连线连接过程协作
+
+- 首次生成有效预览路径时发送 `start`，携带渲染路径和箭头方向；后续移动发送只含最新渲染路径的 `update`。
+- 连线创建、快速连接和端点重连使用同一过程类型，不为不同入口复制协议与远端状态。
+- 创建或重连成功时发送 `commit`；目标失效、权限拒绝、创建失败、工具切换或异常退出时发送 `reset`。
+- 远端过程态固定使用协作者颜色和 `[8, 4]` 虚线，箭头方向随消息保留；提交后的连线改由正式结果展示真实业务样式。
+- 过程态只负责临时路径，正式创建与端点重连继续由应用命令和正式协作回放负责。
 
 #### 首期通用要求
 
@@ -174,7 +191,7 @@
 #### 绘制过程协作
 
 - 支持矩形、正方形、椭圆、多边形、开始节点、结束节点、用户节点和区域的绘制草稿同步。
-- 连线绘制同步起点、当前点、目标吸附状态和预览路径。
+- 连线创建、快速连接和端点重连过程已落地；后续扩展其他连线编辑手势时继续同步发起端计算完成的预览路径，不把吸附业务对象交给远端推导。
 - 绘制过程不得提前创建正式图形。
 - 尺寸不足、权限失败、区域失效、按 Esc、工具切换或断线时发送取消语义。
 - 多个远端用户的绘制草稿可以同时显示。
@@ -242,7 +259,7 @@
 interface RemoteInteractionSession {
   userId: string;
   sessionId: string;
-  kind: 'selection' | 'move' | 'resize' | 'drawing' | 'line-drawing';
+  kind: 'selection' | 'move' | 'resize' | 'drawing' | 'line-connect';
   updatedAt: number;
   payload: unknown;
 }
@@ -273,6 +290,19 @@ interface RemoteInteractionSession {
 
 只有后续需要服务端租约、业务提交幂等查询，或必须把过程预览与 canonical 消息精确关联时，才在新协议版本中增加可选 `operationId`。不能仅为复用名称而把过程 session 与业务事务绑定。
 
+### 5.5 协作颜色作为用户身份的稳定渲染投影
+
+当前客户端实现已在提交 `ee8a50528` 收敛协作颜色规则：协作颜色不是鼠标状态，也不是需要独立缓存的协作数据，而是根据后台广播的 `user_info.user_id` 可重复计算的渲染投影。
+
+- 颜色来源只使用 `user_info.user_id`。接收端将其规范为非空字符串；缺少用户标识时跳过对应协作装饰，不使用名称、会话编号或其他字段冒充。
+- 色板复用现有协作色集合并先去重，使用 32 位 FNV-1a 哈希将用户标识稳定映射到色板索引。同一用户在使用相同色板和算法的客户端中，不受刷新、重连和消息到达顺序影响。
+- 远端鼠标、远端选中态、过程预览以及 PFD 临时区域和选中高亮统一使用该映射，禁止各入口分别随机取色。
+- 不维护独立的“用户—颜色”缓存，也不优先复用远端鼠标对象中的历史颜色。鼠标对象、远端选中态和过程预览中的颜色字段只是当次渲染结果。
+- 缓存补发的选中态或过程预览可以早于远端鼠标消息到达；颜色必须直接从用户标识计算，不能以鼠标消息是否就绪作为前置条件。
+- 色板内容、排列顺序或哈希算法变化都会改变既有用户映射；调整这些基础参数时必须作为协作视觉兼容性变更统一评估，不能由单个入口自行修改。
+
+该方案保证同一用户颜色一致，但不保证同一房间内不同用户绝不发生色板碰撞。若业务要求房间内颜色唯一，需要另行设计带成员生命周期的权威分配协议，不能重新引入依赖消息顺序的客户端随机缓存。
+
 ## 6. 协作协议设计
 
 ### 6.1 协议版本
@@ -297,10 +327,10 @@ interface DragMessage<TPayload = unknown> {
         lineIds: string[];
       };
       interaction?: {
-        kind: 'shape-drawing' | 'shape-resize' | 'shape-move' | 'selection';
+        kind: 'shape-drawing' | 'shape-resize' | 'shape-move' | 'selection' | 'line-connect';
         phase: 'start' | 'update' | 'commit' | 'reset';
         sessionId: string;
-        // 过程预览直接携带所需的 bounds、坐标或图形类型
+        // 过程预览直接携带所需的 bounds、位移、渲染路径或图形类型
       };
     };
   };
@@ -309,7 +339,7 @@ interface DragMessage<TPayload = unknown> {
 
 过程消息发送时不携带 `user_id` 或 `user_info`，后台广播时会自动附加 `data.user_info`，接收端只取其中的 `user_id`。`selection` 是当前用户级选中状态快照，不使用 `sessionId`，每次发送完整的图形 ID 和连线 ID；空数组表示明确清空远端选区。`interaction` 是单个过程消息对象。`handleData` 使用稀疏结构，只保留当前消息实际需要的字段；正式回放器只读取存在的 `add`、`modify`、`delete` 数组，过程态和选中态分别在进入正式回放器前处理。
 
-协议编码出口统一规范过程态几何：包围盒的坐标与尺寸、移动总位移均四舍五入为整数。该规则只约束传输数据，不要求本地指针事件和约束计算过程提前丢失精度。
+协议编码出口统一规范过程态几何：包围盒的坐标与尺寸、移动总位移和连线路径均四舍五入为整数。该规则只约束传输数据，不要求本地指针事件和约束计算过程提前丢失精度。
 
 字段说明：
 
@@ -576,7 +606,7 @@ payload.phase === 'live' && payload.meta.intent === 'resize';
 - 目标失效、会话异常或页面卸载时执行 `reset`，立即清除远端过程态。
 - 后续接入租约和基础版本后，服务端拒绝时同样执行 reset，并恢复最新正式快照。
 
-## 10. 图形绘制过程协作
+## 10. 图形与连线绘制过程协作
 
 ### 10.1 普通图形拖拽绘制
 
@@ -620,28 +650,39 @@ pointer up 后先执行现有 `createShape` 应用命令：
 
 区域绘制抬起后如果仍需弹窗确认，远端草稿可进入 `pending-confirmation` 展示状态；用户取消弹窗后清除，确认后由正式区域替换。
 
-### 10.3 连线绘制
+### 10.3 连线连接
 
-连线 start 表达起点：
+当前实现使用统一的 `line-connect` 过程类型覆盖连线创建、快速连接和端点重连。发起端先完成吸附、轮廓端点和正交或折线路由计算，远端只消费可直接渲染的路径，不重复推导业务语义。
+
+start：
 
 ```ts
-interface LineDrawingStartPayload {
-  startShapeId: string;
-  startEdge?: string;
-  startBoundaryPosition?: number;
-  startPoint: { x: number; y: number };
-  lineType: string;
+interface LineConnectStartPayload {
+  kind: 'line-connect';
+  phase: 'start';
+  sessionId: string;
+  points: number[];
+  arrow: 'none' | 'source' | 'target' | 'both';
 }
 ```
 
-update 表达：
+update：
 
-- 当前路径 points。
-- 当前悬停目标图形。
-- 吸附边和边界位置。
-- 箭头和虚线等最小预览样式。
+```ts
+interface LineConnectUpdatePayload {
+  kind: 'line-connect';
+  phase: 'update';
+  sessionId: string;
+  points: number[];
+}
+```
 
-commit 后仍由连线创建应用命令生成 canonical 连线，远端不得根据预览自行创建正式连线。
+- 路径使用画布世界坐标，并在协议编码出口规范为整数。
+- 箭头方向只在 `start` 提供；远端过程态固定使用协作者颜色和 `[8, 4]` 虚线，不传输或复用最终连线的虚线业务样式。
+- `commit` 和 `reset` 只携带过程类型、相位与会话编号，用于清理远端预览。
+- 新会话开始前会重置尚未结束的旧连线预览；无有效路径时不创建过程会话。
+
+commit 后仍由连线创建或更新应用命令生成 canonical 连线，远端不得根据预览自行创建或修改正式连线。
 
 ## 11. 超大数据量设计
 
@@ -835,6 +876,7 @@ src/views/icce/infrastructure/collaboration/
 └── drag-message-codec.ts
 
 src/views/icce/infrastructure/stores/
+├── remote-cursor-store.ts
 ├── remote-interaction-store.ts
 └── remote-selection-store.ts
 
@@ -859,6 +901,7 @@ src/views/icce/ui/components/layers/
 | 模块                       | 职责                                                               |
 | -------------------------- | ------------------------------------------------------------------ |
 | `drag-message-codec`       | 编码选中状态和单个轻量过程对象，规范过程几何并省略空协议字段。     |
+| `remote-cursor-store`      | 保存远端鼠标渲染状态，并按用户标识稳定派生各协作效果共享的颜色。   |
 | `remote-interaction-store` | 以 `userId + sessionId` 保存远端过程预览。                         |
 | `remote-selection-store`   | 以 `userId` 保存远端用户当前的图形和连线选中 ID。                  |
 | `useCollabSync`            | 处理选中状态和过程消息的节流、发送、接收及远端 Store 更新。        |
@@ -872,7 +915,7 @@ src/views/icce/ui/components/layers/
 完整链路：
 
 ```text
-selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-interaction
+selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-interaction / line.tool
   → CANVAS_EVENTS.INTERACTION_SYNC
   → useCollabSync
   → drag.handleData.selection / interaction
@@ -892,7 +935,7 @@ selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-int
 | 单图形 resize（首期）    | `selection-resize-interaction.ts`            | start、约束后 bounds update、canonical 提交后的 commit、异常 reset。 |
 | 普通图形拖拽绘制（首期） | `shape-draw.tool.ts`                         | start、bounds update、创建成功 commit、失败或中断 reset。            |
 | 区域绘制                 | `region.tool.ts`                             | 草稿开始、bounds 更新、待确认、确认或取消。                          |
-| 连线绘制                 | `line.tool.ts` 及连线交互模块                | 起点、预览路径、吸附目标、创建或取消。                               |
+| 连线创建、快速连接与端点重连 | `line.tool.ts` 及连线交互模块             | 有效路径 start、最新路径 update、创建或重连成功 commit、失败或中断 reset。 |
 
 交互模块只发布轻量过程事件，选择状态由 `selectionStore` 监听提供；两者都不直接调用 WebSocket。`useCollabSync` 统一负责节流、发送和接收，首期不再拆分 publisher、dispatcher 或 applier。
 
@@ -917,7 +960,7 @@ selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-int
 ### 18.1 双协议阶段
 
 - 既有 `drag` 协议继续负责正式 add/modify/delete 数据同步。
-- `handleData.interaction` v1 负责绘制、resize、框选和图形移动过程态。
+- `handleData.interaction` v1 负责图形绘制、连线连接、resize、框选和图形移动过程态。
 - 新增 `handleData.selection` 负责当前用户级选中状态快照。
 - 既有 `select` 完整对象载荷已停止发送并从当前客户端协议类型中移除；接收旧消息时忽略该遗留字段。
 - 当前客户端发送消息时省略空的正式操作数组，接收端仍按可选数组兼容旧消息。
@@ -950,7 +993,7 @@ selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-int
 ### 阶段三：区域、连线和其他绘制过程协作
 
 - 接入区域绘制与待确认状态。
-- 接入连线绘制路径、吸附目标和箭头样式。
+- 连线创建、快速连接和端点重连的过程路径与箭头方向已接入；远端使用统一虚线预览，最终业务样式由提交态负责。
 - 接入区域 resize，并处理子项边界与父区域规则。
 
 ### 阶段四：框选与选区协作
@@ -989,7 +1032,7 @@ selectionStore / shape-draw.tool / shape-drag-interaction / selection-resize-int
 
 ### 20.1 功能验收
 
-- 两名以上用户可同时看到彼此的框选、拖拽、resize 和绘制过程。
+- 两名以上用户可同时看到彼此的框选、拖拽、resize、图形绘制和连线连接过程。
 - 远端选区不影响本地属性面板、工具和选择状态。
 - reset、leave、断线和超时均能清理过程态。
 - 单图形、多图形、区域、子项和关联连线的最终结果一致。

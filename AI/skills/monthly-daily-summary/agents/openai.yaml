@@ -1,0 +1,4 @@
+interface:
+  display_name: "月度日报总结"
+  short_description: "按月份汇总开发日报并提炼成果、问题、风险、经验与后续事项"
+  default_prompt: "使用 $monthly-daily-summary 总结指定月份的开发日报并写入知识库。"
