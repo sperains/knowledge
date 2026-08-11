@@ -20,6 +20,8 @@ FastAPI + Pydantic v2 分层架构 REST API 项目骨架。项目代码位于 Wo
 - [[ADR/ADR-014-Python包采用命名空间包清理死代码导出|ADR-014 命名空间包与死代码清理]]
 - [[ADR/ADR-015-质量门禁必须包含类型检查|ADR-015 质量门禁包含类型检查]]
 
+本项目 ADR 在项目内独立编号；引用时使用上述项目路径，不与其他项目的同编号 ADR 混用。
+
 ## 待定事项
 
 - dependencies 扩展方式：当前每个业务域一个显式 `get_xxx_service`；当 service 间互相依赖增多时，考虑按域拆分 `dependencies/` 目录（方案 B），尚未实施。

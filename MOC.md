@@ -19,7 +19,7 @@
 
 - [[Projects/ICCE/MOC|ICCE 项目知识地图]]：画布、详情页、协作、视口、性能和架构决策。
 - [[Projects/LowCode/MOC|LowCode 项目知识地图]]：低代码项目的技术选型、架构和目录设计。
-- [[Projects/fastapi-skeleton/ADR/MOC|FastAPI 骨架架构决策]]：FastAPI 骨架项目的 ADR 记录。
+- [[Projects/fastapi-skeleton/MOC|FastAPI 骨架项目知识地图]]：FastAPI 骨架项目的分层架构、质量门禁和 ADR 记录。
 
 ## 新增内容流程
 
