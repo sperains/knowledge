@@ -2,8 +2,10 @@
 
 - 状态：Accepted
 - 日期：2026-08-03
-- 作者：Codex
+- 作者：LowCode 项目组
+- 整理工具：Codex
 - 相关领域：页面模型、数据库、配置持久化
+- 所属项目：LowCode
 
 ## 背景（Context）
 

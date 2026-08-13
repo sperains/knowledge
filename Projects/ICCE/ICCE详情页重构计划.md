@@ -1,3 +1,17 @@
+---
+title: ICCE 详情页重构计划
+type: plan
+status: current
+date: 2026-07-30
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-008-详情页拆分页面数据与画布会话]]"
+---
+
 # ICCE 详情页重构计划
 
 > 文档类型：页面重构计划

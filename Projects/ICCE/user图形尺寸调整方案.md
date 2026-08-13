@@ -1,3 +1,17 @@
+---
+title: 用户图形尺寸调整方案
+type: design
+status: current
+date: 2026-07-30
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-012-ICCE图形尺寸约束与预览模式]]"
+---
+
 # 用户图形尺寸调整方案
 
 ## 当前结论

@@ -1,3 +1,18 @@
+---
+title: ICCE 画布退出键分层取消设计
+type: design
+status: current
+date: 2026-08-10
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: "399bd85ad"
+related:
+  - "[[ADR/ADR-006-协作过程态与提交态分离]]"
+  - "[[ADR/ADR-016-选中结果与交互过程分离承载]]"
+---
+
 # ICCE 画布退出键分层取消设计
 
 ## 当前结论

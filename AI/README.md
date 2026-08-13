@@ -21,5 +21,16 @@
 
 当前技能：
 
-- [`knowledge-archive`](skills/knowledge-archive/SKILL.md)：在收到明确归档指令后，把对话中的已确认结论同步到知识库。
+- [`knowledge-archive`](skills/knowledge-archive/SKILL.md)：在收到明确归档指令后，把当前项目或其他工作区对话中的已确认结论同步到配置的中央知识库。
 - [`commit`](skills/commit/SKILL.md)：在收到明确提交请求后，检查改动范围并按项目规范创建 Git 提交。
+- [`simplify-coding`](skills/simplify-coding/SKILL.md)：在实现、修复、重构和审查代码时控制关键假设、方案复杂度、改动范围与验证强度。
+
+## 可运行检查
+
+- [`check_knowledge_base.rb`](examples/check_knowledge_base.rb)：检查项目主题文档元信息、ADR 固定结构、项目导航覆盖和 Obsidian 失效链接。
+
+在知识库根目录运行：
+
+```bash
+ruby AI/examples/check_knowledge_base.rb
+```

@@ -1,3 +1,18 @@
+---
+title: ICCE 空间索引与画布裁剪设计方案
+type: design
+status: current
+date: 2026-08-10
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-003-几何与包含关系下沉领域层]]"
+  - "[[画布大规模节点性能优化方案]]"
+---
+
 # ICCE 空间索引与画布裁剪设计方案
 
 ## 1. 文档定位

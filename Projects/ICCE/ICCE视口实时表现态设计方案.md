@@ -1,3 +1,18 @@
+---
+title: ICCE 视口实时表现态设计方案
+type: design
+status: current
+date: 2026-07-30
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-007-视口采用提交态与实时表现态双状态]]"
+  - "[[画布平移交互链路与性能排查]]"
+---
+
 # ICCE 视口实时表现态设计方案
 
 ## 当前结论

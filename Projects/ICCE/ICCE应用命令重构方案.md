@@ -1,3 +1,17 @@
+---
+title: ICCE 应用命令重构方案
+type: design
+status: current
+date: 2026-07-30
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-002-应用命令作为画布变更唯一入口]]"
+---
+
 # ICCE 应用命令重构方案
 
 ## 当前结论

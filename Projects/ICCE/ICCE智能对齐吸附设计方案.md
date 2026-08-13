@@ -1,3 +1,18 @@
+---
+title: ICCE 智能对齐吸附设计方案
+type: design
+status: current
+date: 2026-07-30
+updated: 2026-08-13
+project: ICCE
+owner: ICCE 项目组
+source_repo: jd_ipd
+source_ref: ""
+related:
+  - "[[ADR/ADR-003-几何与包含关系下沉领域层]]"
+  - "[[ICCE空间索引与画布裁剪设计方案]]"
+---
+
 # ICCE 智能对齐吸附设计方案
 
 ## 当前结论
