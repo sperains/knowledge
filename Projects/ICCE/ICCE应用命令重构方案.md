@@ -99,7 +99,6 @@ application/
 │   │   ├── create-shape.ts
 │   │   ├── update-shapes.ts
 │   │   ├── delete-selection.ts
-│   │   ├── move-shapes.ts
 │   │   ├── update-shape-properties.ts
 │   │   └── reorder-shapes.ts
 │   ├── line/
@@ -114,6 +113,10 @@ application/
 │   ├── quote-snapshot-into-region.ts
 │   └── auto-create-regions-after-load.ts
 ├── execution/
+│   ├── geometry-mutation-executor.ts
+│   ├── apply-region-expansion.ts
+│   ├── line-shift-executor.ts
+│   └── containment-relation-executor.ts
 ├── contracts/
 ├── runtime/
 │   └── canvas-mutation-runtime.ts
@@ -141,7 +144,7 @@ application/
 - `createShape`
 - `updateShapes`
 - `deleteSelection`
-- `moveShapes`
+- `move` 与 `resize`（共用几何变更执行器）
 - `createLine`
 - `updateLine`
 - `deleteLine`
@@ -442,7 +445,7 @@ interface CompositeMutationPlan {
 ### 阶段一：整理目录和命名
 
 - 按 `commands`、`workflows`、`interactions` 调整文件位置。
-- `move-command` 改为 `move-shapes`，使命名与实际目标一致。
+- 移动与缩放不再保留仅负责转发的独立命令文件；两者由 `canvas-command-api.ts` 暴露入口，并共用 `execution/geometry-mutation-executor.ts`。
 - 更新引用路径，不改变执行行为和公开结果。
 
 该阶段的目标是先让职责从目录结构上可见。

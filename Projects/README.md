@@ -6,6 +6,7 @@
 - [[LowCode/MOC|LowCode 项目知识地图]]：简易低代码项目的技术选型、架构和目录设计资料。
 - [[fastapi-skeleton/MOC|FastAPI 骨架项目知识地图]]：FastAPI 骨架项目的分层架构、质量门禁和 ADR 资料。
 - [[DistShip/MOC|DistShip 项目知识地图]]：静态前端项目本地构建与 SSH 增量部署工具的设计和开源计划。
+- [[PersonalSystem/MOC|PersonalSystem 项目知识地图]]：个人简历站点的整体需求、个人系统关系图和 Light/Dark 视觉方案。
 
 ## 项目目录规则
 
