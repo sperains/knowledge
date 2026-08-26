@@ -1,0 +1,4 @@
+interface:
+  display_name: "文稿润色"
+  short_description: "润色、改写和审校中英文文稿"
+  default_prompt: "使用 $rewrite 润色或改写一段文稿。"

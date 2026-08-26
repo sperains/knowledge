@@ -23,6 +23,12 @@
 
 - [`knowledge-archive`](skills/knowledge-archive/SKILL.md)：在收到明确归档指令后，把当前项目或其他工作区对话中的已确认结论同步到配置的中央知识库。
 - [`commit`](skills/commit/SKILL.md)：在收到明确提交请求后，检查改动范围并按项目规范创建 Git 提交。
+- [`report`](skills/report/SKILL.md)：根据当天的工作记录和本地规则生成或更新开发日报。
+- [`monthly-daily-summary`](skills/monthly-daily-summary/SKILL.md)：按自然月汇总开发日报，提炼主题、成果、风险和后续事项。
+- [`rewrite`](skills/rewrite/SKILL.md)：润色、改写和审校中英文文稿，并在保留事实与意图的前提下改善表达。
+- [`find-simplifications`](skills/find-simplifications/SKILL.md)：审查 ICCE 画布中可由证据支持的删减、合并或收窄机会。
+- [`hatch-pet`](skills/hatch-pet/SKILL.md)：创建、修复、校验并打包符合 Codex 规范的动画宠物。
+- [`open-source-readme`](skills/open-source-readme/SKILL.md)：基于仓库证据设计、改写或审查开源项目 README。
 - [`simplify-coding`](skills/simplify-coding/SKILL.md)：在实现、修复、重构和审查代码时控制关键假设、方案复杂度、改动范围与验证强度。
 
 ## 可运行检查

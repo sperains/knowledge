@@ -1,0 +1,4 @@
+interface:
+  display_name: "Open Source README"
+  short_description: "Design clear, credible open-source project READMEs"
+  default_prompt: "Use $open-source-readme to redesign this project's README for clarity, credibility, and adoption."

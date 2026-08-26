@@ -1,4 +1,4 @@
 interface:
   display_name: "report"
-  short_description: "按本地规则整理工作记录并生成开发日报"
-  default_prompt: "使用 $report 根据指定日期的工作记录生成并保存开发日报。"
+  short_description: "按规则整理提交记录并生成结构清晰的开发日报"
+  default_prompt: "使用 $report 根据当天工作记录生成并保存一份开发日报。"

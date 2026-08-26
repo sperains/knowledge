@@ -1,0 +1,4 @@
+interface:
+  display_name: "ICCE Simplification Finder"
+  short_description: "Find evidence-backed ICCE simplification candidates"
+  default_prompt: "Use $find-simplifications to audit ICCE for evidence-backed simplification candidates."

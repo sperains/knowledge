@@ -4,7 +4,7 @@ Loaded from `write` when the input is a long draft (roughly 10k characters or mo
 
 Activate when: editing a Markdown article or file over ~300 lines, or one with multiple `##` sections plus tables and images (technical long-reads, blog posts, deep dives).
 
-In long-form, the dominant problem is usually structural: the same checklist repeated across sections, prose that re-reads a table sitting right above it, list bloat, whole redundant sections. Sentence-level AI taste is the smaller half. A single in-place polish pass cannot see or fix the structural half, which is why a plain `/write` on a long article feels like it changed wording but left the bloat. This mode therefore overrides two Hard Rules: structural cuts and merges are in-scope, and the output is change-points for review, not a rewritten blob.
+In long-form, the dominant problem is usually structural: the same checklist repeated across sections, prose that re-reads a table sitting right above it, list bloat, whole redundant sections. Sentence-level AI taste is the smaller half. A single in-place polish pass cannot see or fix the structural half, which is why a plain `/rewrite` on a long article feels like it changed wording but left the bloat. This mode therefore overrides two Hard Rules: structural cuts and merges are in-scope, and the output is change-points for review, not a rewritten blob.
 
 Workflow:
 

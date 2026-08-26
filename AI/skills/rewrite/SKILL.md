@@ -1,14 +1,13 @@
 ---
-name: write
+name: rewrite
 description: Rewrites and polishes prose in Chinese or English, removes AI-like wording, and reviews product localization copy while preserving intent for drafts, docs, release notes, launch copy, and social posts. Use when users ask in any language to draft, rewrite, proofread, localize, polish release notes, remove AI-like wording, or prepare launch and social copy. Not for code comments, commit messages, or inline docs.
-version: 1.0.1
-when_to_use: 帮我写, 改稿, 润色, 去AI味, 写一段, 审稿, 文档review, 本地化文案, 多语言文案, i18n copy, localization copy, check this document, 推特, twitter, X推文, tweet, social post, 连贯性, 段落连贯, draft, edit text, proofread, sound natural, polish, rewrite
-dispatch_intent: Writing, editing prose, polish, release notes, launch/social copy, remove AI tone
-display_name: "自然改写"
-display_name_en: "Natural Rewrite"
-description_zh: "去除文本中的 AI 味，把稿件改写得更自然、像人写的。支持中英文润色、去 AI 味、发布说明、社交文案、产品本地化审校与长文结构打磨，保留原意与作者语气，不做过度修饰。"
-description_en: "Strip AI patterns from prose and rewrite it to sound human. Supports Chinese/English polishing, de-AI rewriting, release notes, social copy, product localization review, and long-form structural editing—preserving meaning and author voice without over-editing."
-visibility: "public"
+metadata:
+  version: "1.0.1"
+  when_to_use: "帮我写, 改稿, 润色, 去 AI 味, 写一段, 审稿, 文档审校, 本地化文案, 多语言文案, 推特, 社交文案, 段落连贯, 草稿, 文本编辑, 校对, 自然表达, 润色, 改写"
+  dispatch_intent: "Writing, editing prose, polish, release notes, launch/social copy, remove AI tone"
+  description_zh: "去除文本中的 AI 味，把稿件改写得更自然、像人写的。支持中英文润色、去 AI 味、发布说明、社交文案、产品本地化审校与长文结构打磨，保留原意与作者语气，不做过度修饰。"
+  description_en: "Strip AI patterns from prose and rewrite it to sound human. Supports Chinese/English polishing, de-AI rewriting, release notes, social copy, product localization review, and long-form structural editing while preserving meaning and author voice without over-editing."
+  visibility: "public"
 ---
 
 # Write: Cut the AI Taste
@@ -67,7 +66,7 @@ Default is a line-level rewrite of the supplied text. Take a mode only when its 
 
 See [references/durable-context.md](references/durable-context.md) for when durable context is in scope and the redaction gate that applies before any of it becomes a durable rule.
 
-For `/write`: the supplied text and current release state override memory. Durable preferences can set brevity, tone, and social-post shape; they do not override the hard rule to edit in place, keep meaning intact, and avoid change lists unless the user explicitly asks.
+For `/rewrite`: the supplied text and current release state override memory. Durable preferences can set brevity, tone, and social-post shape; they do not override the hard rule to edit in place, keep meaning intact, and avoid change lists unless the user explicitly asks.
 
 ## Hard Rules
 
@@ -87,7 +86,7 @@ Before returning any produced text (a rewrite, or generated release / reply / so
 GATE=""
 for candidate in \
   "<skill-base-dir>/scripts/check-punctuation.sh" \
-  "<skill-base-dir>/skills/write/scripts/check-punctuation.sh"; do
+  "<skill-base-dir>/skills/rewrite/scripts/check-punctuation.sh"; do
   [ -f "$candidate" ] && GATE="$candidate" && break
 done
 [ -f "${GATE:-}" ] || { echo "punctuation gate not found under the installed skill base; reinstall Waza" >&2; exit 1; }
@@ -178,7 +177,6 @@ Return only the edited prose. If the text was truncated or if multiple versions 
 
 ## 共享与运行时副本
 
-- 知识库中的技能文件是可审阅、可追踪的共享来源，运行时副本位于 `~/.workbuddy/skills/write/`。
-- 修改本文件后按宿主提供的安装或同步机制同步运行时副本，再依赖新的行为。
-- 运行时目录中的 `_skillhub_meta.json`、`workbuddy.json` 是宿主安装元数据，不属于共享内容，不进知识库。
+- 知识库中的技能文件是可审阅、可追踪的共享来源；宿主从安装目录加载技能时，运行时副本也应使用 `rewrite` 目录名。
+- 修改本文件后按宿主提供的安装或同步机制更新运行时副本，再依赖新的行为。
 - 中文日报等场景引用本技能时，优先使用 `references/write-zh-prose.md` 的快速规则；完整规则见 `references/write-zh.md`。
