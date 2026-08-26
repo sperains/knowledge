@@ -21,6 +21,7 @@
 - [[Projects/LowCode/MOC|LowCode 项目知识地图]]：低代码项目的技术选型、架构和目录设计。
 - [[Projects/fastapi-skeleton/MOC|FastAPI 骨架项目知识地图]]：FastAPI 骨架项目的分层架构、质量门禁和 ADR 记录。
 - [[Projects/DistShip/MOC|DistShip 项目知识地图]]：静态前端项目本地构建、SSH 增量部署与开源计划。
+- [[Projects/Expo/MOC|Expo 学习项目知识地图]]：Expo 启动连接、iOS 真机调试、版本兼容性排查和开发构建学习计划。
 
 ## 新增内容流程
 

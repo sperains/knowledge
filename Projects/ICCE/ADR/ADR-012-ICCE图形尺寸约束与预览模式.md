@@ -83,6 +83,14 @@ ICCE 中的图形尺寸来自多条交互链路：手工绘制、区域绘制、
 
 连线端点的方向语义和边界位置语义分离：方向决定连接哪条边，边界比例决定该边上的具体连接位置。
 
+### 7. 绘制边界的校验职责与区域归属
+
+绘制交互阶段只校验图形归属存在，不校验图形边界是否落在区域内部；边界合法性由领域层在落库时统一裁决。
+
+- 普通图形绘制工具（`shape-draw.tool.ts`）在 `onPointerUp` 只校验会话携带 `containingRegionId`（区域图类型），不校验最终 `bounds` 是否位于该区域范围内；绘制可跨区域边界进行，预览阶段保持用户手势原样投影。
+- 跨边界绘制提交时由领域层自动补偿：`planShapeCreation` 调用 `planSingleShapeRegionExpansion`，通过 `expandRegionToIncludeRect` 把区域撑大到包含新图形（含内容内边距）；若扩容压到相邻区域，`buildRegionPushUpdates` 求解连锁推挤并带动被推区域后代位移；推挤无解时创建被拒绝（`blocked`，原因 `region-expansion`）。扩容可行性依赖提交时刻的全局区域布局，绘制过程中无法提前判断，因此不要求 UI 层预演扩容结果。
+- 绘制手势恢复（指针离开画布返回后的第一次按下）只做状态命中：要求当前存在已确立起点（`startPoint`）的绘制会话，不重新做空间命中。图形归属在首次按下时已确定并写入会话，续绘仅更新端点，与 `onPointerMove` 不查命中一致；从区域外返回并继续绘制与跨边界提交的宽松校验自洽。
+
 ## 后果（Consequences）
 
 ### 正面影响
@@ -114,6 +122,8 @@ ICCE 中的图形尺寸来自多条交互链路：手工绘制、区域绘制、
 - 快速添加和连线中插入：`src/views/icce/domain/services/quick-add-service.ts`、`src/views/icce/domain/services/insert-shape-into-line-service.ts`
 - 连线端点几何：`src/views/icce/domain/services/line-endpoint-geometry.ts`
 - 规则测试：`src/views/icce/tests/domain/rules/shape-size-constraints.spec.ts`
+- 创建计划与区域扩容裁决：`src/views/icce/domain/services/shape-creation-service.ts`（`planShapeCreation`）、`src/views/icce/domain/services/region-layout-service.ts`（`planSingleShapeRegionExpansion`）
+- 绘制工具测试：`src/views/icce/tests/ui/tools/behaviors/shape-draw.tool.spec.ts`（覆盖区域命中、手势阈值、失败分支、负方向回推与提交链路）
 
 ## 相关文档
 
@@ -130,6 +140,7 @@ ICCE 中的图形尺寸来自多条交互链路：手工绘制、区域绘制、
 - 新增预览类型时，必须显式声明预览模式及其视觉语义。
 - 线上插入图形时，必须先确定整条连线的总体方向，再决定新图形进出边；不得用中点局部线段方向覆盖总体流向。
 - 线上插入图形的边界比例必须优先继承原连线起点和终点的位置；越界时仅回退到边中心，不得回退到边角。
+- 绘制工具不得自行校验图形边界与区域的范围关系，边界合法性统一交给创建计划的区域扩容裁决；绘制手势恢复不得重新解析空间命中。
 
 ## 验证
 
