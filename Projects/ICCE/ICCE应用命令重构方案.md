@@ -3,7 +3,7 @@ title: ICCE 应用命令重构方案
 type: design
 status: current
 date: 2026-07-30
-updated: 2026-08-13
+updated: 2026-09-10
 project: ICCE
 owner: ICCE 项目组
 source_repo: jd_ipd
@@ -20,7 +20,7 @@ related:
 | --- | --- |
 | 应用命令、工作流和运行时职责已分开；正式画布变更统一经过应用命令；命令结果保留业务语义；快速添加、连线插入和引用快照已采用完整计划与集中应用 | 当前仍不是状态级回滚事务；异常发生在底层写入中途时，已完成写入可能保留；状态快照、事实事件缓冲和嵌套事务另行设计 |
 
-阅读本文时，前面的“目标”章节用于说明设计依据，末尾第 15、16 节用于确认实际落地结果。
+阅读本文时，前面的“目标”章节用于说明设计依据，末尾第 15 至 17 节用于确认实际落地结果。
 
 ## 1. 背景
 
@@ -98,15 +98,9 @@ application/
 │   ├── shape/
 │   │   ├── create-shape.ts
 │   │   ├── update-shapes.ts
-│   │   ├── delete-selection.ts
-│   │   ├── update-shape-properties.ts
-│   │   └── reorder-shapes.ts
-│   ├── line/
-│   │   ├── create-line.ts
-│   │   ├── update-line.ts
-│   │   └── delete-line.ts
-│   └── containment/
-│       └── update-containment.ts
+│   │   └── delete-selection.ts
+│   └── line/
+│       └── upsert-lines.ts
 ├── workflows/
 │   ├── quick-add.ts
 │   ├── insert-shape-into-line.ts
@@ -115,25 +109,34 @@ application/
 ├── execution/
 │   ├── geometry-mutation-executor.ts
 │   ├── apply-region-expansion.ts
-│   ├── line-shift-executor.ts
-│   └── containment-relation-executor.ts
+│   ├── move-related-content.ts
+│   └── sync-batch-connected-lines.ts
+├── changes/
+│   ├── change-set-ops.ts
+│   └── submitted-region-changes.ts
 ├── contracts/
+│   ├── canvas-change-set.ts
+│   ├── canvas-mutation.ts
+│   ├── contextual-command.ts
+│   └── diagram-tabs.ts
 ├── runtime/
 │   └── canvas-mutation-runtime.ts
 ├── contextual-canvas-command.ts
+├── validation-rules.ts
 └── canvas-command-api.ts
 ```
 
 画布只读查询不再作为 application port 存在，运行时实例统一位于
 `infrastructure/composition/canvas-query.ts`。
 
-目录只表达三种职责：
+目录表达下列职责：
 
-| 目录或文件                  | 职责                                  | 是否直接操作 Runtime |
-| --------------------------- | ------------------------------------- | -------------------- |
-| `commands`                  | 单个应用变更及其事务、写入和事件      | 是                   |
-| `workflows`                 | 组合多个应用命令形成完整用户场景      | 否                   |
-| `contextual-canvas-command` | 编排上下文工具栏动作并转换应用命令结果 | 否                   |
+| 目录或文件                  | 职责                                     | 是否直接操作 Runtime     |
+| --------------------------- | ---------------------------------------- | ------------------------ |
+| `commands`                  | 单个应用变更及其事务、写入和事件         | 是                       |
+| `workflows`                 | 组合多个应用命令形成完整用户场景         | 否                       |
+| `execution`                 | 命令内部的执行步骤：计划落库与派生副作用 | 是（运行时由命令层传入） |
+| `contextual-canvas-command` | 编排上下文工具栏动作并转换应用命令结果   | 否                       |
 
 ## 4. 核心命令设计
 
@@ -145,10 +148,9 @@ application/
 - `updateShapes`
 - `deleteSelection`
 - `move` 与 `resize`（共用几何变更执行器）
-- `createLine`
-- `updateLine`
-- `deleteLine`
-- `updateContainment`
+- `createLine` 与 `updateLine`（同处 `commands/line/upsert-lines.ts`）
+
+连线删除并入 `deleteSelection`，包含关系刷新并入几何变更与图形创建、删除计划，不再单独设置 `deleteLine` 和 `updateContainment` 命令。
 
 每个命令采用相同的概念流程：
 
@@ -178,7 +180,7 @@ application/
   → updateShapes
 ```
 
-调用方不需要知道底层 `ShapeBatchUpdateItem` 的构造方式。此类薄包装具有应用语义，不属于无效抽象。
+调用方不需要知道底层 `ShapeBatchUpdateItem` 的构造方式。此类薄包装具有应用语义，不属于无效抽象。两者的实现与 `updateShapes` 同处 `commands/shape/update-shapes.ts`，命令入口保持独立。
 
 ### 4.3 命令结果
 
@@ -186,35 +188,41 @@ application/
 
 ```ts
 export type ReorderShapesResult =
-  | { status: 'success'; updates: ShapeBatchUpdatedItem[] }
-  | { status: 'ignored'; reason: 'shape-not-found' | 'no-changes' }
-  | { status: 'rejected'; reason: 'write-failed' | 'region-expansion' };
+  | { status: 'updated' }
+  | { status: 'ignored'; reason: 'shape-not-found' }
+  | { status: 'rejected'; reason: 'write-failed' };
 ```
 
 不建议为了减少几行联合类型而强制所有用例使用一个复杂泛型。比类型复用更重要的是调用方可以可靠地区分处理结果。
 
 ## 5. `updateShapes` 的收敛方式
 
-`updateShapes` 继续作为图形更新的唯一核心入口，不拆成多个可被外部调用的小命令。主函数只保留三个阶段：
+`updateShapes` 继续作为图形更新的唯一核心入口，不拆成多个可被外部调用的小命令。主函数只保留三个阶段：读取快照与预处理、规划完整变更集、一次提交。
 
 ```ts
-export function updateShapes(options: UpdateShapesOptions): UpdateShapesResult {
-  const plan = resolveShapeUpdatePlan(options);
-  if (plan.status !== 'ready') return plan;
+export function executeUpdateShapes(options: UpdateShapesCommandOptions): UpdateShapesResult {
+  const initialSnapshot = {
+    shapes: options.runtime.getShapes(),
+    lines: options.runtime.getLines(),
+    relations: options.runtime.getRelations(),
+  };
+  const resolvedUpdates = resolveUpdates(options, initialSnapshot);
+  if (isRejected(resolvedUpdates)) return resolvedUpdates;
 
-  return options.runtime.runTransaction(options.meta, 'modify', (meta) => {
-    const result = applyShapeUpdatePlan(plan, options.runtime, meta);
-    publishShapeUpdateResult(result, options.runtime, meta);
-    return toUpdateShapesResult(result);
-  });
+  const plan = planShapeUpdateChanges(options, initialSnapshot, resolvedUpdates);
+  if ('status' in plan) return plan;
+  const committed = options.commitOperation(plan.changes, options.meta);
+  if (committed.status !== 'committed') return { status: 'rejected', reason: 'write-failed' };
+
+  return { status: 'updated', affectedTarget: plan.affectedTarget };
 }
 ```
 
 其中：
 
-- `resolveShapeUpdatePlan` 负责单图形规划、目标存在性和区域扩张准入。
-- `applyShapeUpdatePlan` 负责区域扩张、关联内容移动、图形写入和连线同步。
-- `publishShapeUpdateResult` 负责单图形事件、批量事件和关系差异事件。
+- `resolveUpdates` 负责单图形模式下的领域规划与目标存在性准入，批量模式直接使用调用方给出的更新项。
+- `planShapeUpdateChanges` 负责在投影快照中规划完整变更集，包含区域扩容、关联内容移动、图形写入和连线同步。
+- `commitOperation` 负责一次写入变更集并统一发布同步结果。
 
 上述函数优先作为同文件私有函数存在。只有执行逻辑达到独立复杂度并已有多个调用方时，才移动到 `execution` 目录。
 
@@ -224,14 +232,30 @@ export function updateShapes(options: UpdateShapesOptions): UpdateShapesResult {
 
 ```ts
 export interface CanvasCommands {
+  commitOperation: CanvasOperationCommitter;
+
   createShape(shape: Shape, meta?: CanvasMutationMeta, options?: ShapeAddOptions): CreateShapeResult;
+  updateShape(
+    shapeId: string,
+    changes: Partial<Shape>,
+    options?: { regionExpansionPadding?: number },
+    meta?: CanvasMutationMeta
+  ): UpdateShapesResult;
   updateShapes(updates: ShapeBatchUpdateItem[], meta?: CanvasMutationMeta): UpdateShapesResult;
-  deleteSelection(options: DeleteSelectionInput): DeleteSelectionApplicationResult;
-  move(options: MoveCommandInput): CanvasMoveResult;
+  updateShapeProperties(shapeIds: string[], patch: ShapePropertyPatch, meta?: CanvasMutationMeta): UpdateShapePropertiesResult;
+  reorderShapes(shapeIds: Iterable<string>, direction: 'front' | 'back', meta?: CanvasMutationMeta): ReorderShapesResult;
 
   createLine(line: Line, meta?: CanvasMutationMeta): CreateLineResult;
   updateLine(lineId: string, changes: Partial<Line>, meta?: CanvasMutationMeta): UpdateLineResult;
-  deleteLine(lineId: string, meta?: CanvasMutationMeta): DeleteLineResult;
+  updateLines(updates: Array<{ lineId: string; changes: Partial<Line> }>, meta?: CanvasMutationMeta): UpdateLineResult;
+  updateLineProperties(lineIds: string[], patch: LinePropertyPatch, meta?: CanvasMutationMeta): UpdateLineResult;
+
+  planDeleteSelection(selection: SelectionSnapshot): DeleteSelectionPlan;
+  deleteSelection(options: DeleteSelectionInput): DeleteSelectionApplicationResult;
+  rollbackRegion(regionId: string): RollbackRegionResult;
+
+  move(options: { plan: CanvasMovePlan; meta?: CanvasMutationMeta }): CanvasAffectedTarget;
+  resize(options: { plan: CanvasResizePlan; meta?: CanvasMutationMeta }): CanvasAffectedTarget;
 }
 ```
 
@@ -571,3 +595,15 @@ UI → interaction → workflow → command → domain plan → runtime → infr
 - 删除命令与移动命令统一通过运行时查询提交区域影响，组合层不再重复装配同一查询能力。
 - 事务变更记录使用独立的记录模型，不再复用带元数据的事件载荷；事件协议与事务记录协议保持分离。
 - 包含关系命令将显式设置和刷新流程的默认行为归一为策略对象，减少布尔参数组合。
+
+## 17. 命令文件与目录结构同步（2026-09-10）
+
+本轮把文档中的目录树和职责表按当前代码更正，以下条目取代前文对应描述：
+
+- 图形属性更新与图形排序并入 `commands/shape/update-shapes.ts`，与图形更新同处一个文件；`updateShapeProperties` 与 `reorderShapes` 仍作为独立应用命令入口保留，第 4.2 节的结论不变。
+- 连线创建与更新合并为 `commands/line/upsert-lines.ts` 的 `executeCreateLine` 与 `executeUpdateLine`，两条写入路径共用预检、变更集折叠与提交过程；原 `create-line.ts`、`update-line.ts` 不再存在。
+- `commands/containment/` 目录取消，包含关系刷新并入几何变更与图形创建、删除计划，不再有独立的包含关系命令。
+- `execution/` 当前包含 `geometry-mutation-executor.ts`、`apply-region-expansion.ts`、`move-related-content.ts`、`sync-batch-connected-lines.ts`；前文列出的 `line-shift-executor.ts`、`containment-relation-executor.ts` 没有落地。该目录由命令层调用，负责计划落库与派生副作用，不对外表达用例，第 3 节的职责表因此补充了它的行。
+- `CanvasCommands` 当前入口为 `createShape`、`createLine`、`updateShape`、`updateShapes`、`updateShapeProperties`、`updateLine`、`updateLines`、`updateLineProperties`、`deleteSelection`（含 `planDeleteSelection`）、`rollbackRegion`、`reorderShapes`、`move`、`resize` 和 `commitOperation`；`deleteLine` 与 `updateContainment` 已无对应实现，删除统一走 `deleteSelection`。
+- 命令统一通过 `commitOperation` 提交显式变更集，第 5 节示例里的 `runtime.runTransaction` 已由该入口取代。
+- 第 4.3 节的结果示例改为与 `ReorderShapesResult` 一致的状态语义，去掉未使用的 `success` 状态和不会返回的失败原因。

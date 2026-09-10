@@ -5,8 +5,8 @@ Flags half-width punctuation inside CJK sentences (including across a markdown
 emphasis marker, so `**标签**:` is caught), a comma or semicolon glued to the
 next Latin letter, half-width parens hugging a Han char, missing or wrong
 spacing between CJK and Latin, and em/en dashes. Skips fenced code blocks,
-inline code, URLs, and markdown links so punctuation that belongs to code is
-never flagged.
+inline code, URLs, and link targets (markdown links and wiki links) so
+punctuation that belongs to code or a path is never flagged.
 
 Run as: python3 check_punctuation.py [--lang LANG] [--fix] [FILE]
   --lang  zh | en | ja | auto   (default: auto)
@@ -32,6 +32,9 @@ HANGUL = "가-힣"
 URL_RE = re.compile(r"https?://(?:\([^()]*\)|[A-Za-z0-9\-._~:/?#\[\]@!$&'*+,;=%])+")
 # group(1) captures only the (url) target so the [label] stays visible to checks.
 MD_LINK_RE = re.compile(r"\[[^\]]*\](\((?:[^()]|\([^()]*\))*\))")
+# group(1) captures only the target of a [[target|label]] wiki link (Obsidian
+# style); the optional label after the pipe stays visible, same intent as above.
+WIKI_LINK_RE = re.compile(r"\[\[([^\[\]|]+)(?:\|[^\[\]]*)?\]\]")
 
 # Single-class matchers reused across detect_lang / fix_zh_line (compiled once).
 _HANGUL_RE = re.compile(f"[{HANGUL}]")
@@ -88,13 +91,16 @@ def _inline_code_spans(line: str):
 
 def exempt_mask(line: str) -> list[bool]:
     """Per-character mask; True marks positions inside inline code, a URL, or the
-    (url) target of a markdown link -- never inspected or rewritten. The [label]
-    of a markdown link stays visible (it is rendered prose). A trailing ASCII
+    target of a markdown or wiki link -- never inspected or rewritten. The
+    [label] of a markdown link and the label after the pipe of a [[target|label]]
+    wiki link stay visible (they are rendered prose). A trailing ASCII
     mark on a bare URL immediately followed by a CJK/kana/Hangul char is released
     from the mask: it is a sentence separator, not part of the URL."""
     mask = [False] * len(line)
     spans: list[tuple[int, int]] = []
     for m in MD_LINK_RE.finditer(line):
+        spans.append((m.start(1), m.end(1)))
+    for m in WIKI_LINK_RE.finditer(line):
         spans.append((m.start(1), m.end(1)))
     for m in URL_RE.finditer(line):
         s, e = m.start(), m.end()
