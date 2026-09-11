@@ -70,7 +70,7 @@ UI
 约束如下：
 
 - 只有 `commands` 可以直接依赖 `CanvasMutationRuntime`。
-- `workflows` 通过应用命令入口完成状态变更，不直接写 Store。
+- `use-cases` 通过应用命令入口完成状态变更，不直接写 Store。
 - `interactions` 只解释 UI 动作并转换结果，不实现核心变更逻辑。
 - 只有 `infrastructure` 可以装配 Pinia Store、接口请求和具体事务实现。
 - `domain` 继续负责无副作用的规则判断与变更计划。
@@ -99,18 +99,15 @@ application/
 │   │   ├── create-shape.ts
 │   │   ├── update-shapes.ts
 │   │   └── delete-selection.ts
-│   └── line/
-│       └── upsert-lines.ts
-├── workflows/
+│   ├── line/
+│   │   └── upsert-lines.ts
+│   └── geometry/
+│       └── update-geometry.ts
+├── use-cases/
 │   ├── quick-add.ts
 │   ├── insert-shape-into-line.ts
 │   ├── quote-snapshot-into-region.ts
 │   └── auto-create-regions-after-load.ts
-├── execution/
-│   ├── geometry-mutation-executor.ts
-│   ├── apply-region-expansion.ts
-│   ├── move-related-content.ts
-│   └── sync-batch-connected-lines.ts
 ├── changes/
 │   ├── change-set-ops.ts
 │   └── submitted-region-changes.ts
@@ -134,9 +131,11 @@ application/
 | 目录或文件                  | 职责                                     | 是否直接操作 Runtime     |
 | --------------------------- | ---------------------------------------- | ------------------------ |
 | `commands`                  | 单个应用变更及其事务、写入和事件         | 是                       |
-| `workflows`                 | 组合多个应用命令形成完整用户场景         | 否                       |
-| `execution`                 | 命令内部的执行步骤：计划落库与派生副作用 | 是（运行时由命令层传入） |
+| `use-cases`                 | 组合多个应用命令形成完整用户场景         | 否                       |
 | `contextual-canvas-command` | 编排上下文工具栏动作并转换应用命令结果   | 否                       |
+
+命令内部的执行能力（区域扩容、关联内容移动、连线同步）作为 `update-shapes.ts`
+的模块私有函数存在，不单独成文件或目录。
 
 ## 4. 核心命令设计
 
@@ -224,7 +223,7 @@ export function executeUpdateShapes(options: UpdateShapesCommandOptions): Update
 - `planShapeUpdateChanges` 负责在投影快照中规划完整变更集，包含区域扩容、关联内容移动、图形写入和连线同步。
 - `commitOperation` 负责一次写入变更集并统一发布同步结果。
 
-上述函数优先作为同文件私有函数存在。只有执行逻辑达到独立复杂度并已有多个调用方时，才移动到 `execution` 目录。
+上述函数优先作为同文件私有函数存在。只有执行逻辑达到独立复杂度并已有多个调用方时，才拆成独立文件。
 
 ## 6. 应用命令入口
 
@@ -468,8 +467,8 @@ interface CompositeMutationPlan {
 
 ### 阶段一：整理目录和命名
 
-- 按 `commands`、`workflows`、`interactions` 调整文件位置。
-- 移动与缩放不再保留仅负责转发的独立命令文件；两者由 `canvas-command-api.ts` 暴露入口，并共用 `execution/geometry-mutation-executor.ts`。
+- 按 `commands`、`use-cases`、`interactions` 调整文件位置。
+- 移动与缩放不再保留仅负责转发的独立命令文件；两者由 `canvas-command-api.ts` 暴露入口，并共用几何变更命令。
 - 更新引用路径，不改变执行行为和公开结果。
 
 该阶段的目标是先让职责从目录结构上可见。
@@ -603,7 +602,10 @@ UI → interaction → workflow → command → domain plan → runtime → infr
 - 图形属性更新与图形排序并入 `commands/shape/update-shapes.ts`，与图形更新同处一个文件；`updateShapeProperties` 与 `reorderShapes` 仍作为独立应用命令入口保留，第 4.2 节的结论不变。
 - 连线创建与更新合并为 `commands/line/upsert-lines.ts` 的 `executeCreateLine` 与 `executeUpdateLine`，两条写入路径共用预检、变更集折叠与提交过程；原 `create-line.ts`、`update-line.ts` 不再存在。
 - `commands/containment/` 目录取消，包含关系刷新并入几何变更与图形创建、删除计划，不再有独立的包含关系命令。
-- `execution/` 当前包含 `geometry-mutation-executor.ts`、`apply-region-expansion.ts`、`move-related-content.ts`、`sync-batch-connected-lines.ts`；前文列出的 `line-shift-executor.ts`、`containment-relation-executor.ts` 没有落地。该目录由命令层调用，负责计划落库与派生副作用，不对外表达用例，第 3 节的职责表因此补充了它的行。
+- `execution/` 目录取消：移动与缩放作为正式应用命令移入 `commands/geometry/update-geometry.ts`，导出为 `executeUpdateGeometry`；区域扩容、关联内容移动、连线同步内联为 `update-shapes.ts` 的模块私有函数，不再单独成文件。前文列出的 `line-shift-executor.ts`、`containment-relation-executor.ts` 没有落地。
+- `workflows/` 更名为 `use-cases/`；快速添加相关的两个入口（创建图形并连线、连接已有图形）保留在同一个 `quick-add.ts` 中，不按入口拆分文件。
+- 组合层同名文件 `canvas-composite-use-cases.ts`、`region-content-use-cases.ts` 更名为 `canvas-composite-composition.ts`、`region-content-composition.ts`，让“用例”一词只属于应用层。
+- 架构测试新增 `application/execution` 目录不存在的断言，场景用例与交互层不得依赖运行时的断言路径同步到 `application/use-cases`。
 - `CanvasCommands` 当前入口为 `createShape`、`createLine`、`updateShape`、`updateShapes`、`updateShapeProperties`、`updateLine`、`updateLines`、`updateLineProperties`、`deleteSelection`（含 `planDeleteSelection`）、`rollbackRegion`、`reorderShapes`、`move`、`resize` 和 `commitOperation`；`deleteLine` 与 `updateContainment` 已无对应实现，删除统一走 `deleteSelection`。
 - 命令统一通过 `commitOperation` 提交显式变更集，第 5 节示例里的 `runtime.runTransaction` 已由该入口取代。
 - 第 4.3 节的结果示例改为与 `ReorderShapesResult` 一致的状态语义，去掉未使用的 `success` 状态和不会返回的失败原因。
