@@ -8,6 +8,8 @@
 - [[DistShip/MOC|DistShip 项目知识地图]]：静态前端项目本地构建与 SSH 增量部署工具的设计和开源计划。
 - [[PersonalSystem/MOC|PersonalSystem 项目知识地图]]：个人简历站点的整体需求、个人系统关系图和 Light/Dark 视觉方案。
 - [[Expo/MOC|Expo 学习项目知识地图]]：Expo 启动连接、iOS 真机调试、版本兼容性排查和开发构建学习计划。
+- [[jd-ui/MOC|jd-ui 项目知识地图]]：通用前端 UI、工具库及关系树选择组件设计资料。
+- [[jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]：JDEC 模块化平台的项目概览、数据引擎和参与开发资料。
 
 ## 项目目录规则
 
@@ -31,3 +33,5 @@
 - DistShip：项目资料入口见 [[DistShip/MOC|DistShip 项目知识地图]]。
 - PersonalSystem：项目资料入口见 [[PersonalSystem/MOC|PersonalSystem 项目知识地图]]。
 - Expo：项目资料入口见 [[Expo/MOC|Expo 学习项目知识地图]]。
+- jd-ui：项目资料入口见 [[jd-ui/MOC|jd-ui 项目知识地图]]。
+- jdec-platform-v1：项目资料入口见 [[jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]。

@@ -22,6 +22,8 @@
 - [[Projects/fastapi-skeleton/MOC|FastAPI 骨架项目知识地图]]：FastAPI 骨架项目的分层架构、质量门禁和 ADR 记录。
 - [[Projects/DistShip/MOC|DistShip 项目知识地图]]：静态前端项目本地构建、SSH 增量部署与开源计划。
 - [[Projects/Expo/MOC|Expo 学习项目知识地图]]：Expo 启动连接、iOS 真机调试、版本兼容性排查和开发构建学习计划。
+- [[Projects/jd-ui/MOC|jd-ui 项目知识地图]]：通用前端 UI、工具库及关系树选择组件设计资料。
+- [[Projects/jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]：JDEC 模块化平台的项目概览、数据引擎和参与开发资料。
 
 ## 新增内容流程
 
