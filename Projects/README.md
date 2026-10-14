@@ -21,7 +21,7 @@
 - 跨项目的工作记录、AI 提示词和知识库全局规则保留在根目录；日报和月报统一归入 `Worklog/`。
 - 新增项目时，先创建项目目录和 MOC，再添加具体设计文档。
 
-完成项目文档调整后运行 `ruby AI/examples/check_knowledge_base.rb`，检查元信息、ADR 结构、导航覆盖和失效链接。
+完成项目文档调整后，用可用解释器运行 `python3 AI/examples/check_knowledge_base.py` 或 `ruby AI/examples/check_knowledge_base.rb`，检查元信息、ADR 结构、导航覆盖和失效链接。运行任一版本即可；有 POSIX Shell 时可运行 `sh AI/examples/check_knowledge_base.sh` 自动选择。
 
 ## 当前项目
 

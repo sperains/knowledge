@@ -16,6 +16,7 @@
 - `ADR_RULES.md`：全局 ADR 记录规则。
 - `GIT_COMMIT_RULES.md`：用户级 Git 提交规范，适用于所有项目。
 - `Worklog/`：按天和按月整理的开发工作记录及其规则。
+- `Guides/`：不隶属于具体代码项目的技术操作指南和文章，按主题收纳；`Guides/WSL/` 保存 WSL 备份与迁移资料。
 - `AI/`：可复用的 AI 资源总目录，其中 `AI/prompts/` 保存提示词，`AI/skills/` 保存 agent 技能，`AI/examples/` 保存可运行示例。
 - `MOC.md`：知识库全局导航，只维护入口和链接，不重复保存正文。
 - `.obsidian/`：Obsidian 工作区配置，不属于知识内容。

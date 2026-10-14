@@ -35,5 +35,5 @@
 ## 修改与校验
 
 1. 修改知识内容后，按 `LOG.md` 既有格式在当天日期下追加一条增量记录；只追加，不改写历史。仅检查或没有内容变更时不写空日志。同一天多次修改时，更新当天已有记录或在其下补充条目，不为同一天重复新建日期标题。
-2. 项目文档有变更时，运行 `ruby AI/examples/check_knowledge_base.rb`。
+2. 项目文档有变更时，使用可用解释器运行知识库检查：`python3 AI/examples/check_knowledge_base.py` 或 `ruby AI/examples/check_knowledge_base.rb`，运行任一版本即可。有 POSIX Shell 时也可运行 `sh AI/examples/check_knowledge_base.sh`，自动优先选用 Python 3，无 Python 3 时使用 Ruby；检查失败不切换另一版本重试。
 3. 完成后检查差异和链接，汇报变更文件、重要结论、待定事项以及刻意跳过的内容。

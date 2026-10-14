@@ -37,10 +37,23 @@
 
 ## 可运行检查
 
-- [`check_knowledge_base.rb`](examples/check_knowledge_base.rb)：检查项目主题文档元信息、ADR 固定结构、项目导航覆盖和 Obsidian 失效链接。
+- [`check_knowledge_base.py`](examples/check_knowledge_base.py) 和 [`check_knowledge_base.rb`](examples/check_knowledge_base.rb)：按相同规则检查项目主题文档元信息、ADR 固定结构、项目导航覆盖和 Obsidian 失效链接。Python 版只使用标准库。
+- [`check_knowledge_base.sh`](examples/check_knowledge_base.sh)：在有 POSIX Shell 的环境中自动选择可用解释器，优先 Python 3，其次 Ruby，并保留检查脚本的退出码。
 
-在知识库根目录运行：
+在知识库根目录，根据已有工具选择任一命令：
+
+```bash
+python3 AI/examples/check_knowledge_base.py
+```
 
 ```bash
 ruby AI/examples/check_knowledge_base.rb
 ```
+
+在 Linux、WSL 或 macOS 中，也可以自动选择：
+
+```bash
+sh AI/examples/check_knowledge_base.sh
+```
+
+如果 Windows 中 Python 3 的命令是 `python`，将第一条命令中的 `python3` 替换为 `python`。无需同时安装 Python 和 Ruby。检查结果为失败时应修正文档，不通过更换解释器绕过错误；自动入口也不会在检查失败后切换另一版脚本。
