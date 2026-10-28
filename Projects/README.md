@@ -11,6 +11,8 @@
 - [[jd-ui/MOC|jd-ui 项目知识地图]]：通用前端 UI、工具库及关系树选择组件设计资料。
 - [[jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]：JDEC 模块化平台的项目概览、数据引擎和参与开发资料。
 
+- [[jd-yw-bigscreen/MOC|jd-yw-bigscreen 项目知识地图]]：运维中心大屏功能优化需求分析、源码线索和待确认事项。
+
 ## 项目目录规则
 
 - 每个具体项目使用 `Projects/项目名/` 独立收纳。
@@ -35,3 +37,4 @@
 - Expo：项目资料入口见 [[Expo/MOC|Expo 学习项目知识地图]]。
 - jd-ui：项目资料入口见 [[jd-ui/MOC|jd-ui 项目知识地图]]。
 - jdec-platform-v1：项目资料入口见 [[jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]。
+- jd-yw-bigscreen：项目资料入口见 [[jd-yw-bigscreen/MOC|jd-yw-bigscreen 项目知识地图]]。

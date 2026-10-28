@@ -17,6 +17,7 @@
 
 ## 技术指南
 
+- [[Guides/Backend/消息队列Worker与异步任务进度机制|消息队列、Worker与异步任务进度机制]]：消费者与执行进程、回调分工、业务进度、重试幂等及前端状态恢复。
 - [[Guides/WSL/WSL备份与迁移操作指南|WSL 备份与迁移操作指南]]：个人环境的具体路径、备份步骤、恢复验证和测试副本清理。
 - [[Guides/WSL/WSL环境备份与迁移-技术博客|WSL 环境备份与迁移技术博客]]：适合分享的通用文章，使用示例名称和路径说明完整迁移流程。
 
@@ -29,6 +30,8 @@
 - [[Projects/Expo/MOC|Expo 学习项目知识地图]]：Expo 启动连接、iOS 真机调试、版本兼容性排查和开发构建学习计划。
 - [[Projects/jd-ui/MOC|jd-ui 项目知识地图]]：通用前端 UI、工具库及关系树选择组件设计资料。
 - [[Projects/jdec-platform-v1/MOC|jdec-platform-v1 项目知识地图]]：JDEC 模块化平台的项目概览、数据引擎和参与开发资料。
+
+- [[Projects/jd-yw-bigscreen/MOC|jd-yw-bigscreen 项目知识地图]]：运维中心大屏功能优化需求分析、源码线索和待确认事项。
 
 ## 新增内容流程
 
