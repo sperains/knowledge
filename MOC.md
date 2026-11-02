@@ -33,6 +33,8 @@
 
 - [[Projects/jd-yw-bigscreen/MOC|jd-yw-bigscreen 项目知识地图]]：运维中心大屏功能优化需求分析、源码线索和待确认事项。
 
+- [[Projects/jd-hr/MOC|jd-hr 项目知识地图]]：员工信息登记单字段取值与离职原因规则。
+
 ## 新增内容流程
 
 ```text
