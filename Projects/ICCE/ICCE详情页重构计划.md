@@ -3,16 +3,18 @@ title: ICCE 详情页重构计划
 type: plan
 status: current
 date: 2026-07-30
-updated: 2026-08-13
+updated: 2026-11-20
 project: ICCE
 owner: ICCE 项目组
 source_repo: jd_ipd
-source_ref: ""
+source_ref: 待核验
 related:
   - "[[ADR/ADR-008-详情页拆分页面数据与画布会话]]"
 ---
 
 # ICCE 详情页重构计划
+
+> 源码核验说明：历史文档未记录可追溯的源码版本，本次仅明确待核验状态，未声明正文与当前代码一致。
 
 > 文档类型：页面重构计划
 > 当前状态：第一至第四阶段已完成；第五阶段核心生命周期已完成、细节持续收口；第六阶段模板拆分暂缓；第七阶段按职责收敛完成；第八阶段持续补齐测试和类型

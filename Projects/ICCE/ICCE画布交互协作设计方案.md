@@ -3,11 +3,11 @@ title: ICCE 画布交互协作设计方案
 type: design
 status: current
 date: 2026-07-30
-updated: 2026-08-14
+updated: 2026-11-20
 project: ICCE
 owner: ICCE 项目组
 source_repo: jd_ipd
-source_ref: ""
+source_ref: 待核验
 related:
   - "[[ADR/ADR-006-协作过程态与提交态分离]]"
   - "[[ADR/ADR-016-选中结果与交互过程分离承载]]"
@@ -15,6 +15,8 @@ related:
 ---
 
 # ICCE 画布交互协作设计方案
+
+> 源码核验说明：历史文档未记录可追溯的源码版本，本次仅明确待核验状态，未声明正文与当前代码一致。
 
 本文说明画布协作的当前边界、协议设计和后续能力预案。当前实现以“当前实现基线”为准；实施阶段和目标增强仅作为规划依据。
 

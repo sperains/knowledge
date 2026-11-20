@@ -3,16 +3,18 @@ title: 用户图形尺寸调整方案
 type: design
 status: current
 date: 2026-07-30
-updated: 2026-08-13
+updated: 2026-11-20
 project: ICCE
 owner: ICCE 项目组
 source_repo: jd_ipd
-source_ref: ""
+source_ref: 待核验
 related:
   - "[[ADR/ADR-012-ICCE图形尺寸约束与预览模式]]"
 ---
 
 # 用户图形尺寸调整方案
+
+> 源码核验说明：历史文档未记录可追溯的源码版本，本次仅明确待核验状态，未声明正文与当前代码一致。
 
 ## 当前结论
 
